@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 5 - Strength Upgrades (Feature 1: Transposition Table complete)
-- Acceptance: Phase 5.1 passed (TT with Zobrist hashing, Exact/Lower/Upper bounds, ply mate adjustments, `setoption name Hash`, node reduction from 40.1M -> 3.8M)
+- Current phase: 5 - Strength Upgrades (Feature 2: Move Ordering complete)
+- Acceptance: Phase 5.2 passed (Move ordering with TT best move, MVV-LVA capture scoring, 2 killer moves per ply, and history heuristic table; bench node count dropped by >91% from 3.82M -> 339k nodes!)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 3,819,290 nodes @ 1.58 Mnps in 2.4s (10x faster search reduction via TT)
-- Elo estimate: ~2000 (Alpha-beta + Quiescence + PeSTO tapered eval + TT)
+- Latest bench: 339,524 nodes @ 1.71 Mnps in 199 ms
+- Elo estimate: ~2150 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Full Move Ordering)
 
 ## Completed
 
@@ -46,11 +46,16 @@
   - Proper mate score normalization by ply when storing/probing
   - Exact, LowerBound (beta cutoff), and UpperBound (alpha fail-low) cutoffs
   - UCI options `setoption name Hash value <MB>` and `ucinewgame` table clearing
-  - Massive node count reduction on bench: 40,119,727 -> 3,819,290 nodes (bench time dropped from 21s -> 2.4s)
+- Phase 5.2: Move Ordering (`ordering.rs`):
+  - TT move queried and placed first (1,000,000 pts)
+  - Captures scored with MVV-LVA (victim value * 10 - attacker value + promotions)
+  - Killer moves table storing 2 quiet beta-cutoff killers per ply
+  - History heuristic 3D table `[color][from][to]` incremented on quiet beta cutoffs
+  - Extraordinary bench efficiency improvement: bench time dropped from **2,415 ms down to 199 ms** (3,819,290 nodes down to 339,524 nodes)
 
 ## Validation
 
 - `cargo build --release`: Passed
 - `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 3.82M nodes in 2.41s (10.5x search efficiency speedup)
+- Engine bench: 339,524 nodes in 199 ms (12x additional speedup over TT alone)

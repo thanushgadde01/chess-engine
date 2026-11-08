@@ -6,6 +6,7 @@ use cozy_chess::{Board, GameStatus, Move, Piece};
 
 use crate::board::Position;
 use crate::eval::evaluate;
+use crate::ordering::MoveOrdering;
 use crate::timeman::TimeManager;
 use crate::tt::{Bound, TranspositionTable};
 
@@ -105,6 +106,7 @@ pub fn search(
 
     let mut best_move = Some(moves[0]);
     let mut history_stack = Vec::with_capacity(64);
+    let mut ordering = MoveOrdering::new();
 
     // Iterative deepening
     for d in 1..=max_depth {
@@ -123,14 +125,10 @@ pub fn search(
             table.probe(board.hash(), 0).and_then(|(entry, _)| entry.best_move)
         };
 
-        // Order the TT move or best move from previous iteration first
+        // Order moves using MoveOrdering (TT move, MVV-LVA captures, Killers, History)
         let mut ordered_moves = moves.clone();
         let candidate_first = tt_move.or(best_move);
-        if let Some(target) = candidate_first {
-            if let Some(idx) = ordered_moves.iter().position(|&m| m == target) {
-                ordered_moves.swap(0, idx);
-            }
-        }
+        ordering.order_moves(board, &mut ordered_moves, candidate_first, 0);
 
         for &mv in &ordered_moves {
             let mut next = board.clone();
@@ -138,7 +136,17 @@ pub fn search(
             ctx.nodes += 1;
 
             history_stack.push(next.hash());
-            let score = -negamax(&next, d - 1, 1, -beta, -alpha, &mut ctx, &mut history_stack, &tt);
+            let score = -negamax(
+                &next,
+                d - 1,
+                1,
+                -beta,
+                -alpha,
+                &mut ctx,
+                &mut history_stack,
+                &tt,
+                &mut ordering,
+            );
             history_stack.pop();
 
             if ctx.stop_flag.load(Ordering::Relaxed) {
@@ -232,6 +240,7 @@ fn negamax(
     ctx: &mut SearchContext,
     search_history: &mut Vec<u64>,
     tt: &Arc<Mutex<TranspositionTable>>,
+    ordering: &mut MoveOrdering,
 ) -> i32 {
     if ctx.should_stop() {
         return 0;
@@ -286,13 +295,9 @@ fn negamax(
         };
     }
 
-    // Order TT move first if available
+    // Order moves: TT move, MVV-LVA, killers, history
     let mut ordered_moves = moves;
-    if let Some(mv) = tt_move {
-        if let Some(idx) = ordered_moves.iter().position(|&m| m == mv) {
-            ordered_moves.swap(0, idx);
-        }
-    }
+    ordering.order_moves(board, &mut ordered_moves, tt_move, ply);
 
     let mut best = -MATE;
     let mut best_move = None;
@@ -303,7 +308,17 @@ fn negamax(
         ctx.nodes += 1;
 
         search_history.push(next.hash());
-        let score = -negamax(&next, depth - 1, ply + 1, -beta, -alpha, ctx, search_history, tt);
+        let score = -negamax(
+            &next,
+            depth - 1,
+            ply + 1,
+            -beta,
+            -alpha,
+            ctx,
+            search_history,
+            tt,
+            ordering,
+        );
         search_history.pop();
 
         if ctx.stop_flag.load(Ordering::Relaxed) {
@@ -316,6 +331,13 @@ fn negamax(
         }
         alpha = alpha.max(score);
         if alpha >= beta {
+            // Beta cutoff: update killer and history if quiet move
+            let enemy = !board.side_to_move();
+            let is_capture = board.colors(enemy).has(mv.to);
+            if !is_capture && mv.promotion.is_none() {
+                ordering.record_killer(mv, ply);
+                ordering.record_history(board, mv, depth);
+            }
             break;
         }
     }
