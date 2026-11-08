@@ -1,10 +1,4 @@
-mod board;
-mod eval;
-mod ordering;
-mod search;
-mod timeman;
-mod tt;
-mod uci;
+use engine::uci;
 
 fn main() {
     uci::run();

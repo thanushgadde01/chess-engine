@@ -44,14 +44,36 @@ impl Position {
             return 1;
         }
 
-        self.legal_moves()
-            .into_iter()
-            .map(|mv| {
-                let mut next = self.clone();
-                next.play(mv);
-                next.perft(depth - 1)
-            })
-            .sum()
+        let mut count = 0;
+        self.board.generate_moves(|piece_moves| {
+            for mv in piece_moves {
+                let mut next = self.board.clone();
+                next.play_unchecked(mv);
+                let next_pos = Position { board: next };
+                count += next_pos.perft(depth - 1);
+            }
+            false
+        });
+        count
+    }
+
+    pub fn perft_divide(&self, depth: u8) -> Vec<(Move, u64)> {
+        if depth == 0 {
+            return Vec::new();
+        }
+
+        let mut results = Vec::new();
+        self.board.generate_moves(|piece_moves| {
+            for mv in piece_moves {
+                let mut next = self.board.clone();
+                next.play_unchecked(mv);
+                let next_pos = Position { board: next };
+                let nodes = next_pos.perft(depth - 1);
+                results.push((mv, nodes));
+            }
+            false
+        });
+        results
     }
 }
 
@@ -67,7 +89,7 @@ mod tests {
     #[test]
     fn kiwipete_perft_depth_three() {
         let position =
-            Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -")
+            Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
                 .unwrap();
         assert_eq!(position.perft(3), 97_862);
     }
