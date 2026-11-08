@@ -29,7 +29,7 @@ pub fn run() {
             match cmd {
                 SearchCommand::Go(pos, limits) => {
                     stop_flag_worker.store(false, Ordering::Relaxed);
-                    let (best, _nodes) = search::search(pos.board(), limits, Arc::clone(&stop_flag_worker));
+                    let (best, _nodes) = search::search(&pos, limits, Arc::clone(&stop_flag_worker));
                     let mv_str = best.map(|m| m.to_string()).unwrap_or_else(|| "0000".to_string());
                     println!("bestmove {mv_str}");
                     let _ = io::stdout().flush();
@@ -221,7 +221,7 @@ pub fn run_bench() {
                 ..Default::default()
             };
             let stop = Arc::new(AtomicBool::new(false));
-            let (_mv, nodes) = search::search(pos.board(), limits, stop);
+            let (_mv, nodes) = search::search(&pos, limits, stop);
             total_nodes += nodes;
             eprintln!("Bench [{}/{}] nodes: {}", idx + 1, bench_positions.len(), nodes);
         }

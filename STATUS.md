@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 4 - Core Search
-- Acceptance: Phase 3 passed (PeSTO PSTs, tapered eval, color symmetry verified, unit tests passing)
+- Current phase: 5 - Strength Upgrades
+- Acceptance: Phase 4 passed (Alpha-beta negamax, quiescence with MVV-LVA & delta pruning, mate scoring, threefold repetition and 50-move draw detection, time manager, tactics suite passing)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 8,060,544 nodes @ 6.36 Mnps
-- Elo estimate: ~1400 (PeSTO tapered eval + negamax)
+- Latest bench: 40,119,727 nodes @ 1.88 Mnps
+- Elo estimate: ~1800 (Alpha-beta + Quiescence + PeSTO tapered eval)
 
 ## Completed
 
@@ -33,10 +33,19 @@
 - Phase 3: Implemented PeSTO piece-square tables with tapered evaluation (midgame/endgame phase blending)
 - Phase 3: Evaluated from side-to-move perspective with zero heap allocations in inner loop
 - Phase 3: Verified start position balance and color symmetry unit tests (`startpos_eval_is_balanced`, `color_symmetry`)
+- Phase 4: Core Search implemented:
+  - Alpha-beta pruning negamax with iterative deepening (searching previous iteration's PV move first)
+  - Quiescence search with MVV-LVA capture ordering and delta pruning
+  - Mate scoring with distance-to-mate ply adjustments
+  - Draw detection (3-fold repetition, 50-move rule, insufficient material)
+  - Time allocation manager (`timeman.rs`) with safety margin
+  - Periodic stop flag and clock check every 2048 nodes
+  - Tactics test suite passing (`test_mate_in_one`, `test_mate_in_two`, `test_threefold_draw_detection`)
 
 ## Validation
 
 - `cargo build --release`: Passed
-- `cargo test --lib eval`: Passed
+- `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 6.36 Mnps across 8.06M nodes
+- `cargo test --lib eval`: Passed
+- Engine bench: 40.12M nodes @ 1.88 Mnps in 21s
