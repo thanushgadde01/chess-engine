@@ -1,13 +1,14 @@
 use std::io::{self, BufRead, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::channel;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 use cozy_chess::Move;
 
 use crate::board::Position;
 use crate::search::{self, SearchLimits};
+use crate::tt::{TranspositionTable, DEFAULT_TT_SIZE_MB};
 
 enum SearchCommand {
     Go(Position, SearchLimits),
@@ -18,18 +19,24 @@ enum SearchCommand {
 pub fn run() {
     let stdin = io::stdin();
     let mut position = Position::startpos();
+    let tt = Arc::new(Mutex::new(TranspositionTable::new(DEFAULT_TT_SIZE_MB)));
 
     // Background search worker thread
     let (tx, rx) = channel::<SearchCommand>();
     let stop_flag = Arc::new(AtomicBool::new(false));
     let stop_flag_worker = Arc::clone(&stop_flag);
+    let tt_worker = Arc::clone(&tt);
 
     let worker_handle = thread::spawn(move || {
         while let Ok(cmd) = rx.recv() {
             match cmd {
                 SearchCommand::Go(pos, limits) => {
                     stop_flag_worker.store(false, Ordering::Relaxed);
-                    let (best, _nodes) = search::search(&pos, limits, Arc::clone(&stop_flag_worker));
+                    {
+                        let mut table = tt_worker.lock().unwrap();
+                        table.new_search();
+                    }
+                    let (best, _nodes) = search::search(&pos, limits, Arc::clone(&stop_flag_worker), Arc::clone(&tt_worker));
                     let mv_str = best.map(|m| m.to_string()).unwrap_or_else(|| "0000".to_string());
                     println!("bestmove {mv_str}");
                     let _ = io::stdout().flush();
@@ -68,6 +75,8 @@ pub fn run() {
             "ucinewgame" => {
                 stop_flag.store(true, Ordering::Relaxed);
                 position = Position::startpos();
+                let mut table = tt.lock().unwrap();
+                table.clear();
             }
             "position" => {
                 let rest: Vec<&str> = parts.collect();
@@ -89,8 +98,13 @@ pub fn run() {
                 run_bench();
             }
             "setoption" => {
-                // e.g., setoption name Hash value 32
-                // options can be handled here as we implement TT in Phase 4
+                let rest: Vec<&str> = parts.collect();
+                if rest.len() >= 4 && rest[0].eq_ignore_ascii_case("name") && rest[1].eq_ignore_ascii_case("hash") && rest[2].eq_ignore_ascii_case("value") {
+                    if let Ok(size_mb) = rest[3].parse::<usize>() {
+                        let mut table = tt.lock().unwrap();
+                        table.resize(size_mb.clamp(1, 1024));
+                    }
+                }
             }
             "quit" => {
                 stop_flag.store(true, Ordering::Relaxed);
@@ -214,6 +228,8 @@ pub fn run_bench() {
     let start = std::time::Instant::now();
     let mut total_nodes = 0u64;
 
+    let tt = Arc::new(Mutex::new(TranspositionTable::new(DEFAULT_TT_SIZE_MB)));
+
     for (idx, fen) in bench_positions.iter().enumerate() {
         if let Ok(pos) = Position::from_fen(fen) {
             let limits = SearchLimits {
@@ -221,7 +237,7 @@ pub fn run_bench() {
                 ..Default::default()
             };
             let stop = Arc::new(AtomicBool::new(false));
-            let (_mv, nodes) = search::search(&pos, limits, stop);
+            let (_mv, nodes) = search::search(&pos, limits, stop, Arc::clone(&tt));
             total_nodes += nodes;
             eprintln!("Bench [{}/{}] nodes: {}", idx + 1, bench_positions.len(), nodes);
         }

@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
 use cozy_chess::{Board, GameStatus, Move, Piece};
@@ -7,6 +7,7 @@ use cozy_chess::{Board, GameStatus, Move, Piece};
 use crate::board::Position;
 use crate::eval::evaluate;
 use crate::timeman::TimeManager;
+use crate::tt::{Bound, TranspositionTable};
 
 pub const MATE: i32 = 30_000;
 pub const MATE_BOUND: i32 = MATE - 1_000;
@@ -80,6 +81,7 @@ pub fn search(
     position: &Position,
     limits: SearchLimits,
     stop_flag: Arc<AtomicBool>,
+    tt: Arc<Mutex<TranspositionTable>>,
 ) -> (Option<Move>, u64) {
     let board = position.board();
     let moves = legal_moves(board);
@@ -115,10 +117,17 @@ pub fn search(
         let mut alpha = -MATE;
         let beta = MATE;
 
-        // Order the best move from the previous iteration first
+        // Probe TT at root
+        let tt_move = {
+            let table = tt.lock().unwrap();
+            table.probe(board.hash(), 0).and_then(|(entry, _)| entry.best_move)
+        };
+
+        // Order the TT move or best move from previous iteration first
         let mut ordered_moves = moves.clone();
-        if let Some(prev_best) = best_move {
-            if let Some(idx) = ordered_moves.iter().position(|&m| m == prev_best) {
+        let candidate_first = tt_move.or(best_move);
+        if let Some(target) = candidate_first {
+            if let Some(idx) = ordered_moves.iter().position(|&m| m == target) {
                 ordered_moves.swap(0, idx);
             }
         }
@@ -129,7 +138,7 @@ pub fn search(
             ctx.nodes += 1;
 
             history_stack.push(next.hash());
-            let score = -negamax(&next, d - 1, 1, -beta, -alpha, &mut ctx, &mut history_stack);
+            let score = -negamax(&next, d - 1, 1, -beta, -alpha, &mut ctx, &mut history_stack, &tt);
             history_stack.pop();
 
             if ctx.stop_flag.load(Ordering::Relaxed) {
@@ -148,6 +157,11 @@ pub fn search(
 
         if !ctx.stop_flag.load(Ordering::Relaxed) && current_best.is_some() {
             best_move = current_best;
+            // Store root evaluation into TT
+            {
+                let mut table = tt.lock().unwrap();
+                table.store(board.hash(), d, best_score, Bound::Exact, best_move, 0);
+            }
             let elapsed_ms = ctx.start_time.elapsed().as_millis().max(1);
             let nps = (ctx.nodes as u128 * 1000) / elapsed_ms;
             let score_str = if best_score.abs() > MATE_BOUND {
@@ -214,9 +228,10 @@ fn negamax(
     depth: u8,
     ply: usize,
     mut alpha: i32,
-    beta: i32,
+    mut beta: i32,
     ctx: &mut SearchContext,
     search_history: &mut Vec<u64>,
+    tt: &Arc<Mutex<TranspositionTable>>,
 ) -> i32 {
     if ctx.should_stop() {
         return 0;
@@ -236,6 +251,27 @@ fn negamax(
         return 0;
     }
 
+    // Transposition Table probe
+    let orig_alpha = alpha;
+    let hash = board.hash();
+    let mut tt_move = None;
+
+    if let Ok(table) = tt.try_lock() {
+        if let Some((entry, Some(score))) = table.probe(hash, ply) {
+            tt_move = entry.best_move;
+            if entry.depth >= depth {
+                match entry.bound {
+                    Bound::Exact => return score,
+                    Bound::LowerBound => alpha = alpha.max(score),
+                    Bound::UpperBound => beta = beta.min(score),
+                }
+                if alpha >= beta {
+                    return score;
+                }
+            }
+        }
+    }
+
     // Quiescence search at leaf nodes
     if depth == 0 {
         return quiescence(board, alpha, beta, ctx, 0);
@@ -250,25 +286,51 @@ fn negamax(
         };
     }
 
+    // Order TT move first if available
+    let mut ordered_moves = moves;
+    if let Some(mv) = tt_move {
+        if let Some(idx) = ordered_moves.iter().position(|&m| m == mv) {
+            ordered_moves.swap(0, idx);
+        }
+    }
+
     let mut best = -MATE;
-    for mv in moves {
+    let mut best_move = None;
+
+    for mv in ordered_moves {
         let mut next = board.clone();
         next.play(mv);
         ctx.nodes += 1;
 
         search_history.push(next.hash());
-        let score = -negamax(&next, depth - 1, ply + 1, -beta, -alpha, ctx, search_history);
+        let score = -negamax(&next, depth - 1, ply + 1, -beta, -alpha, ctx, search_history, tt);
         search_history.pop();
 
         if ctx.stop_flag.load(Ordering::Relaxed) {
             return 0;
         }
 
-        best = best.max(score);
+        if score > best {
+            best = score;
+            best_move = Some(mv);
+        }
         alpha = alpha.max(score);
         if alpha >= beta {
             break;
         }
+    }
+
+    // Store in Transposition Table
+    let bound = if best <= orig_alpha {
+        Bound::UpperBound
+    } else if best >= beta {
+        Bound::LowerBound
+    } else {
+        Bound::Exact
+    };
+
+    if let Ok(mut table) = tt.try_lock() {
+        table.store(hash, depth, best, bound, best_move, ply);
     }
 
     best
