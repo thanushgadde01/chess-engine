@@ -142,7 +142,7 @@ pub fn search(
             // Order moves using MoveOrdering (TT move, MVV-LVA captures, Killers, History)
             let mut ordered_moves = moves.clone();
             let candidate_first = tt_move.or(best_move);
-            ordering.order_moves(board, &mut ordered_moves, candidate_first, 0);
+            ordering.order_moves(board, &mut ordered_moves, candidate_first, None, 0);
 
             for &mv in &ordered_moves {
                 let mut next = board.clone();
@@ -160,6 +160,7 @@ pub fn search(
                     &mut history_stack,
                     &tt,
                     &mut ordering,
+                    Some(mv),
                     true,
                 );
                 history_stack.pop();
@@ -287,6 +288,7 @@ fn negamax(
     search_history: &mut Vec<u64>,
     tt: &Arc<Mutex<TranspositionTable>>,
     ordering: &mut MoveOrdering,
+    prev_move: Option<Move>,
     allow_null: bool,
 ) -> i32 {
     if ctx.should_stop() {
@@ -332,6 +334,18 @@ fn negamax(
         }
     }
 
+    // Static evaluation for pruning heuristics
+    let static_eval = evaluate(board);
+
+    // Reverse Futility Pruning (RFP / Static Null Move Pruning)
+    // If static evaluation is well above beta in shallow non-check nodes, prune immediately
+    if !in_check && depth <= 3 && static_eval.abs() < MATE_BOUND {
+        let rfp_margin = 120 * depth as i32;
+        if static_eval - rfp_margin >= beta {
+            return static_eval - rfp_margin;
+        }
+    }
+
     // Null-Move Pruning (NMP)
     // Conditions:
     // - allow_null is true (never consecutive null moves)
@@ -359,6 +373,7 @@ fn negamax(
                     search_history,
                     tt,
                     ordering,
+                    None,
                     false, // Do not allow consecutive null moves
                 );
 
@@ -383,9 +398,9 @@ fn negamax(
         };
     }
 
-    // Order moves: TT move, MVV-LVA, killers, history
+    // Order moves: TT move, MVV-LVA, killers, countermoves, history
     let mut ordered_moves = moves;
-    ordering.order_moves(board, &mut ordered_moves, tt_move, ply);
+    ordering.order_moves(board, &mut ordered_moves, tt_move, prev_move, ply);
 
     let mut best = -MATE;
     let mut best_move = None;
@@ -398,12 +413,21 @@ fn negamax(
 
         search_history.push(next.hash());
 
-        // Determine move properties for LMR
+        // Determine move properties for LMR / Futility
         let enemy = !board.side_to_move();
         let is_capture = board.colors(enemy).has(mv.to);
         let gives_check = !next.checkers().is_empty();
         let is_promotion = mv.promotion.is_some();
         let is_killer = ordering.killers[ply.min(crate::ordering::MAX_PLY - 1)].contains(&Some(mv));
+
+        // Futility Pruning: skip quiet moves that have no chance of raising alpha at shallow depths
+        if !in_check && depth <= 2 && moves_searched > 0 && !is_capture && !is_promotion && !gives_check && !is_killer {
+            let futility_margin = 150 * depth as i32;
+            if static_eval + futility_margin <= alpha {
+                moves_searched += 1;
+                continue;
+            }
+        }
 
         // Principal Variation Search (PVS) with Late Move Reductions (LMR)
         let score = if moves_searched == 0 {
@@ -418,6 +442,7 @@ fn negamax(
                 search_history,
                 tt,
                 ordering,
+                Some(mv),
                 true,
             )
         } else {
@@ -442,6 +467,7 @@ fn negamax(
                 search_history,
                 tt,
                 ordering,
+                Some(mv),
                 true,
             );
 
@@ -457,6 +483,7 @@ fn negamax(
                     search_history,
                     tt,
                     ordering,
+                    Some(mv),
                     true,
                 );
             }
@@ -473,6 +500,7 @@ fn negamax(
                     search_history,
                     tt,
                     ordering,
+                    Some(mv),
                     true,
                 );
             }
@@ -492,12 +520,13 @@ fn negamax(
         }
         alpha = alpha.max(score);
         if alpha >= beta {
-            // Beta cutoff: update killer and history if quiet move
+            // Beta cutoff: update killer, countermove, and history if quiet move
             let enemy = !board.side_to_move();
             let is_capture = board.colors(enemy).has(mv.to);
             if !is_capture && mv.promotion.is_none() {
                 ordering.record_killer(mv, ply);
                 ordering.record_history(board, mv, depth);
+                ordering.record_countermove(board, prev_move, mv);
             }
             break;
         }
