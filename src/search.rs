@@ -349,9 +349,16 @@ fn negamax(
 
         search_history.push(next.hash());
 
-        // Principal Variation Search (PVS)
+        // Determine move properties for LMR
+        let enemy = !board.side_to_move();
+        let is_capture = board.colors(enemy).has(mv.to);
+        let gives_check = !next.checkers().is_empty();
+        let is_promotion = mv.promotion.is_some();
+        let is_killer = ordering.killers[ply.min(crate::ordering::MAX_PLY - 1)].contains(&Some(mv));
+
+        // Principal Variation Search (PVS) with Late Move Reductions (LMR)
         let score = if moves_searched == 0 {
-            // First move: full window
+            // First move: full window, full depth
             -negamax(
                 &next,
                 depth - 1,
@@ -365,10 +372,20 @@ fn negamax(
                 true,
             )
         } else {
-            // Later moves: zero/null window search
+            // Late Move Reductions (LMR) for quiet, late moves
+            let mut reduction = 0;
+            if depth >= 3 && moves_searched >= 3 && !is_capture && !is_promotion && !gives_check && !is_killer {
+                reduction = 1;
+                if depth >= 6 && moves_searched >= 6 {
+                    reduction = 2;
+                }
+            }
+
+            let search_depth = (depth - 1).saturating_sub(reduction);
+
             let mut s = -negamax(
                 &next,
-                depth - 1,
+                search_depth,
                 ply + 1,
                 -alpha - 1,
                 -alpha,
@@ -378,6 +395,23 @@ fn negamax(
                 ordering,
                 true,
             );
+
+            // If reduced search fails high, re-search at full depth with null window
+            if reduction > 0 && s > alpha {
+                s = -negamax(
+                    &next,
+                    depth - 1,
+                    ply + 1,
+                    -alpha - 1,
+                    -alpha,
+                    ctx,
+                    search_history,
+                    tt,
+                    ordering,
+                    true,
+                );
+            }
+
             // Re-search with full window on fail-high
             if s > alpha && s < beta {
                 s = -negamax(
