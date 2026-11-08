@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 3 - Evaluation
-- Acceptance: Phase 2 passed (UCI loop, background search thread, bench command, automated UCI protocol test verified)
+- Current phase: 4 - Core Search
+- Acceptance: Phase 3 passed (PeSTO PSTs, tapered eval, color symmetry verified, unit tests passing)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 6,232,376 nodes @ 12.48 Mnps
-- Elo estimate: ~1200 (material negamax baseline)
+- Latest bench: 8,060,544 nodes @ 6.36 Mnps
+- Elo estimate: ~1400 (PeSTO tapered eval + negamax)
 
 ## Completed
 
@@ -28,12 +28,15 @@
 - Phase 2: UCI protocol parser with full stdin trimming (\r\n) and stdout flushing
 - Phase 2: Dedicated worker thread for search to allow responsive `stop` and `isready`
 - Phase 2: Position history tracking for repetition detection
-- Phase 2: Integrated bench command across 6 standard positions (12.48 Mnps)
+- Phase 2: Integrated bench command across 6 standard positions
 - Phase 2: Integration test `tests/uci_test.rs` validating full UCI handshake and move generation
+- Phase 3: Implemented PeSTO piece-square tables with tapered evaluation (midgame/endgame phase blending)
+- Phase 3: Evaluated from side-to-move perspective with zero heap allocations in inner loop
+- Phase 3: Verified start position balance and color symmetry unit tests (`startpos_eval_is_balanced`, `color_symmetry`)
 
 ## Validation
 
 - `cargo build --release`: Passed
-- `cargo test --release`: Passed
+- `cargo test --lib eval`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 12.48 Mnps
+- Engine bench: 6.36 Mnps across 8.06M nodes
