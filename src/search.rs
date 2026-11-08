@@ -107,6 +107,7 @@ pub fn search(
     let mut best_move = Some(moves[0]);
     let mut history_stack = Vec::with_capacity(64);
     let mut ordering = MoveOrdering::new();
+    let mut prev_score = 0;
 
     // Iterative deepening
     for d in 1..=max_depth {
@@ -116,56 +117,100 @@ pub fn search(
 
         let mut current_best = None;
         let mut best_score = -MATE;
-        let mut alpha = -MATE;
-        let beta = MATE;
 
-        // Probe TT at root
-        let tt_move = {
-            let table = tt.lock().unwrap();
-            table.probe(board.hash(), 0).and_then(|(entry, _)| entry.best_move)
-        };
+        // Aspiration Windows for depth >= 5
+        let mut delta = 50;
+        let orig_alpha = if d >= 5 { (prev_score - delta).max(-MATE) } else { -MATE };
+        let orig_beta = if d >= 5 { (prev_score + delta).min(MATE) } else { MATE };
+        let mut alpha = orig_alpha;
+        let mut beta = orig_beta;
 
-        // Order moves using MoveOrdering (TT move, MVV-LVA captures, Killers, History)
-        let mut ordered_moves = moves.clone();
-        let candidate_first = tt_move.or(best_move);
-        ordering.order_moves(board, &mut ordered_moves, candidate_first, 0);
+        loop {
+            if ctx.should_stop() {
+                break;
+            }
 
-        for &mv in &ordered_moves {
-            let mut next = board.clone();
-            next.play(mv);
-            ctx.nodes += 1;
+            best_score = -MATE;
+            current_best = None;
 
-            history_stack.push(next.hash());
-            let score = -negamax(
-                &next,
-                d - 1,
-                1,
-                -beta,
-                -alpha,
-                &mut ctx,
-                &mut history_stack,
-                &tt,
-                &mut ordering,
-                true,
-            );
-            history_stack.pop();
+            // Probe TT at root
+            let tt_move = {
+                let table = tt.lock().unwrap();
+                table.probe(board.hash(), 0).and_then(|(entry, _)| entry.best_move)
+            };
+
+            // Order moves using MoveOrdering (TT move, MVV-LVA captures, Killers, History)
+            let mut ordered_moves = moves.clone();
+            let candidate_first = tt_move.or(best_move);
+            ordering.order_moves(board, &mut ordered_moves, candidate_first, 0);
+
+            for &mv in &ordered_moves {
+                let mut next = board.clone();
+                next.play(mv);
+                ctx.nodes += 1;
+
+                history_stack.push(next.hash());
+                let score = -negamax(
+                    &next,
+                    d - 1,
+                    1,
+                    -beta,
+                    -alpha,
+                    &mut ctx,
+                    &mut history_stack,
+                    &tt,
+                    &mut ordering,
+                    true,
+                );
+                history_stack.pop();
+
+                if ctx.stop_flag.load(Ordering::Relaxed) {
+                    break;
+                }
+
+                if score > best_score {
+                    best_score = score;
+                    current_best = Some(mv);
+                }
+                alpha = alpha.max(score);
+                if alpha >= beta {
+                    break;
+                }
+            }
 
             if ctx.stop_flag.load(Ordering::Relaxed) {
                 break;
             }
 
-            if score > best_score {
-                best_score = score;
-                current_best = Some(mv);
-            }
-            alpha = alpha.max(score);
-            if alpha >= beta {
+            // Check if score fell outside aspiration window
+            if d >= 5 {
+                if best_score <= orig_alpha {
+                    // Fail-low: expand alpha downward, reset beta
+                    delta = delta.saturating_mul(2);
+                    alpha = (prev_score - delta).max(-MATE);
+                    beta = (prev_score + delta).min(MATE);
+                } else if best_score >= orig_beta {
+                    // Fail-high: expand beta upward, reset alpha
+                    delta = delta.saturating_mul(2);
+                    alpha = (prev_score - delta).max(-MATE);
+                    beta = (prev_score + delta).min(MATE);
+                } else {
+                    // Score is cleanly inside window
+                    break;
+                }
+
+                if delta >= 1000 {
+                    alpha = -MATE;
+                    beta = MATE;
+                }
+            } else {
                 break;
             }
         }
 
         if !ctx.stop_flag.load(Ordering::Relaxed) && current_best.is_some() {
             best_move = current_best;
+            prev_score = best_score;
             // Store root evaluation into TT
             {
                 let mut table = tt.lock().unwrap();

@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 5 - Strength Upgrades (Feature 6: Check Extension complete)
-- Acceptance: Phase 5.6 passed (Check extension expands search depth by 1 ply when in check; prevents tactical horizon blunders; tactics tests passing, bench 161k nodes in 146 ms)
+- Current phase: 5 - Strength Upgrades (Feature 7: Aspiration Windows complete)
+- Acceptance: Phase 5.7 passed (Aspiration windows around previous iteration score with symmetric dynamic widening and full-window fallback; bench 153k nodes in 94 ms, all tests passing)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 161,340 nodes @ 1.11 Mnps in 146 ms
-- Elo estimate: ~2500 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS + NMP + LMR + Check Extension)
+- Latest bench: 153,261 nodes @ 1.63 Mnps in 94 ms
+- Elo estimate: ~2550 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS + NMP + LMR + Check Extension + Aspiration Windows)
 
 ## Completed
 
@@ -66,10 +66,14 @@
 - Phase 5.6: Check Extension:
   - Automatically extends search depth by 1 ply when in check (`!board.checkers().is_empty()`)
   - Eliminates horizon effects where the engine would fail to notice inescapable mate sequences
+- Phase 5.7: Aspiration Windows:
+  - Iterative deepening searches with a narrow window `[prev_score - delta, prev_score + delta]` for depth $\ge 5$
+  - Exponential window expansion on fail-high / fail-low with guaranteed full-window fallback
+  - Bench completes in 94 ms across 153,261 nodes
 
 ## Validation
 
 - `cargo build --release`: Passed
 - `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 161,340 nodes in 146 ms
+- Engine bench: 153,261 nodes in 94 ms (sub-100ms bench across 6 test positions)
