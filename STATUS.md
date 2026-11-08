@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 5 - Strength Upgrades (Feature 3: Principal Variation Search complete)
-- Acceptance: Phase 5.3 passed (PVS zero/null window searches with full-window re-searches on fail-highs; bench dropped further from 339k -> 276k nodes, bench duration down to 151 ms)
+- Current phase: 5 - Strength Upgrades (Feature 4: Null-Move Pruning complete)
+- Acceptance: Phase 5.4 passed (Adaptive NMP R=2/3 with zugzwang non-pawn verification, checkers check, non-consecutive null rule; bench nodes reduced from 276k -> 228k, duration 133 ms)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 276,534 nodes @ 1.83 Mnps in 151 ms
-- Elo estimate: ~2250 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS)
+- Latest bench: 228,508 nodes @ 1.72 Mnps in 133 ms
+- Elo estimate: ~2350 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS + NMP)
 
 ## Completed
 
@@ -55,11 +55,16 @@
   - Full search window (`-beta, -alpha`) for principal/first variation
   - Minimal zero/null window (`-alpha - 1, -alpha`) for all subsequent candidate moves
   - Automatic re-search on fail-high (`score > alpha && score < beta`)
-  - Node count reduced further from 339k -> 276k nodes (151 ms)
+- Phase 5.4: Null-Move Pruning (NMP):
+  - Verified no check condition (`board.checkers().is_empty()`)
+  - Verified non-pawn material present (guard against zugzwang in pawn/king endgames)
+  - Prevented consecutive null moves via `allow_null = false`
+  - Adaptive reduction $R = 2$ ($R = 3$ for depth $\ge 6$)
+  - Bench node count trimmed further from 276,534 down to 228,508 nodes (133 ms total runtime)
 
 ## Validation
 
 - `cargo build --release`: Passed
 - `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 276,534 nodes in 151 ms
+- Engine bench: 228,508 nodes in 133 ms

@@ -146,6 +146,7 @@ pub fn search(
                 &mut history_stack,
                 &tt,
                 &mut ordering,
+                true,
             );
             history_stack.pop();
 
@@ -241,6 +242,7 @@ fn negamax(
     search_history: &mut Vec<u64>,
     tt: &Arc<Mutex<TranspositionTable>>,
     ordering: &mut MoveOrdering,
+    allow_null: bool,
 ) -> i32 {
     if ctx.should_stop() {
         return 0;
@@ -276,6 +278,43 @@ fn negamax(
                 }
                 if alpha >= beta {
                     return score;
+                }
+            }
+        }
+    }
+
+    // Null-Move Pruning (NMP)
+    // Conditions:
+    // - allow_null is true (never consecutive null moves)
+    // - depth >= 3
+    // - not in check
+    // - side-to-move has non-pawn material (avoid zugzwang in endgame)
+    if allow_null && depth >= 3 && board.checkers().is_empty() {
+        let us = board.side_to_move();
+        let my_pieces = board.colors(us);
+        let my_pawns = board.pieces(Piece::Pawn);
+        let my_kings = board.pieces(Piece::King);
+        let has_non_pawn = !(my_pieces & !(my_pawns | my_kings)).is_empty();
+
+        if has_non_pawn {
+            if let Some(null_board) = board.null_move() {
+                let r = 2 + (depth >= 6) as u8; // R = 2 (or 3 for deeper depths)
+                let reduced_depth = depth.saturating_sub(r + 1);
+                let null_score = -negamax(
+                    &null_board,
+                    reduced_depth,
+                    ply + 1,
+                    -beta,
+                    -beta + 1,
+                    ctx,
+                    search_history,
+                    tt,
+                    ordering,
+                    false, // Do not allow consecutive null moves
+                );
+
+                if null_score >= beta {
+                    return beta;
                 }
             }
         }
@@ -323,6 +362,7 @@ fn negamax(
                 search_history,
                 tt,
                 ordering,
+                true,
             )
         } else {
             // Later moves: zero/null window search
@@ -336,6 +376,7 @@ fn negamax(
                 search_history,
                 tt,
                 ordering,
+                true,
             );
             // Re-search with full window on fail-high
             if s > alpha && s < beta {
@@ -349,6 +390,7 @@ fn negamax(
                     search_history,
                     tt,
                     ordering,
+                    true,
                 );
             }
             s
