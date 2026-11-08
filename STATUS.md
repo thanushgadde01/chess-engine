@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 5 - Strength Upgrades (Feature 2: Move Ordering complete)
-- Acceptance: Phase 5.2 passed (Move ordering with TT best move, MVV-LVA capture scoring, 2 killer moves per ply, and history heuristic table; bench node count dropped by >91% from 3.82M -> 339k nodes!)
+- Current phase: 5 - Strength Upgrades (Feature 3: Principal Variation Search complete)
+- Acceptance: Phase 5.3 passed (PVS zero/null window searches with full-window re-searches on fail-highs; bench dropped further from 339k -> 276k nodes, bench duration down to 151 ms)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 339,524 nodes @ 1.71 Mnps in 199 ms
-- Elo estimate: ~2150 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Full Move Ordering)
+- Latest bench: 276,534 nodes @ 1.83 Mnps in 151 ms
+- Elo estimate: ~2250 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS)
 
 ## Completed
 
@@ -51,11 +51,15 @@
   - Captures scored with MVV-LVA (victim value * 10 - attacker value + promotions)
   - Killer moves table storing 2 quiet beta-cutoff killers per ply
   - History heuristic 3D table `[color][from][to]` incremented on quiet beta cutoffs
-  - Extraordinary bench efficiency improvement: bench time dropped from **2,415 ms down to 199 ms** (3,819,290 nodes down to 339,524 nodes)
+- Phase 5.3: Principal Variation Search (PVS):
+  - Full search window (`-beta, -alpha`) for principal/first variation
+  - Minimal zero/null window (`-alpha - 1, -alpha`) for all subsequent candidate moves
+  - Automatic re-search on fail-high (`score > alpha && score < beta`)
+  - Node count reduced further from 339k -> 276k nodes (151 ms)
 
 ## Validation
 
 - `cargo build --release`: Passed
 - `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 339,524 nodes in 199 ms (12x additional speedup over TT alone)
+- Engine bench: 276,534 nodes in 151 ms

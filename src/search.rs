@@ -301,6 +301,7 @@ fn negamax(
 
     let mut best = -MATE;
     let mut best_move = None;
+    let mut moves_searched = 0;
 
     for mv in ordered_moves {
         let mut next = board.clone();
@@ -308,18 +309,53 @@ fn negamax(
         ctx.nodes += 1;
 
         search_history.push(next.hash());
-        let score = -negamax(
-            &next,
-            depth - 1,
-            ply + 1,
-            -beta,
-            -alpha,
-            ctx,
-            search_history,
-            tt,
-            ordering,
-        );
+
+        // Principal Variation Search (PVS)
+        let score = if moves_searched == 0 {
+            // First move: full window
+            -negamax(
+                &next,
+                depth - 1,
+                ply + 1,
+                -beta,
+                -alpha,
+                ctx,
+                search_history,
+                tt,
+                ordering,
+            )
+        } else {
+            // Later moves: zero/null window search
+            let mut s = -negamax(
+                &next,
+                depth - 1,
+                ply + 1,
+                -alpha - 1,
+                -alpha,
+                ctx,
+                search_history,
+                tt,
+                ordering,
+            );
+            // Re-search with full window on fail-high
+            if s > alpha && s < beta {
+                s = -negamax(
+                    &next,
+                    depth - 1,
+                    ply + 1,
+                    -beta,
+                    -alpha,
+                    ctx,
+                    search_history,
+                    tt,
+                    ordering,
+                );
+            }
+            s
+        };
+
         search_history.pop();
+        moves_searched += 1;
 
         if ctx.stop_flag.load(Ordering::Relaxed) {
             return 0;
