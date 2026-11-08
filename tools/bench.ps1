@@ -14,3 +14,4 @@ if (-not (Test-Path $EnginePath)) {
 
 Write-Host "Running bench with $EnginePath ..." -ForegroundColor Cyan
 "bench`nquit`n" | & $EnginePath
+

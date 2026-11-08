@@ -21,3 +21,4 @@ if (-not (Test-Path $FastchessPath)) {
     -concurrency $Concurrency `
     -openings file=$Book format=epd order=random `
     -rounds 500
+
