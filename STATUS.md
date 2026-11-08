@@ -1,19 +1,24 @@
 # Engine Status
 
-- Current phase: 0 - Setup
-- Acceptance: blocked by the Windows linker required for Cargo builds
-- Known issues: Rust stable and `cozy-chess` are installed, but MSVC `link.exe` is missing; the available legacy MinGW linker does not support Rust's `--high-entropy-va` option, and Visual Studio Build Tools installation failed
-- Latest bench: not available
-- Elo estimate: not measured
+- Current phase: 1 - Board and Move Generation
+- Acceptance: Phase 0 passed (`target\release\engine.exe` built successfully)
+- Toolchain:
+  - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
+  - host: x86_64-pc-windows-msvc
+  - cargo: 1.99.1 (5f94df478 2026-08-27)
+  - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
+- Known issues: none
+- Latest bench: not measured yet
+- Elo estimate: not measured yet
 
 ## Completed
 
-- Rust crate manifest with `cozy-chess`
-- Release profile configured for optimized engine builds
-- Module boundaries created for board, evaluation, search, transposition table, move ordering, UCI, and time management
+- Verified Rust MSVC toolchain and located MSVC `link.exe`
+- Configured `.cargo/config.toml` with `target-cpu=native`
+- Added release profile in `Cargo.toml` (`opt-level = 3`, `lto = "fat"`, `codegen-units = 1`, `panic = "abort"`)
+- Verified `cargo build --release` producing `target\release\engine.exe`
+- Module skeleton and folder structure initialized (`tools/bin`, `tools/books`, `tests`)
 
 ## Validation
 
-- `cargo build --release`: blocked during dependency build-script linking
-- `cargo check --release`: blocked by the same linker requirement
-- `rustfmt --check`: pending linker/toolchain remediation
+- `cargo build --release`: Passed
