@@ -262,6 +262,10 @@ fn negamax(
         return 0;
     }
 
+    // Check extension: extend depth by 1 if in check to avoid tactical horizon effects
+    let in_check = !board.checkers().is_empty();
+    let depth = if in_check { depth.saturating_add(1) } else { depth };
+
     // Transposition Table probe
     let orig_alpha = alpha;
     let hash = board.hash();

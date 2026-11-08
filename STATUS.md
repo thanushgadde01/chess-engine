@@ -1,15 +1,15 @@
 # Engine Status
 
-- Current phase: 5 - Strength Upgrades (Feature 5: Late Move Reductions complete)
-- Acceptance: Phase 5.5 passed (LMR for quiet late moves depth>=3 and moves_searched>=3 with null-window verification and re-search; bench nodes cut nearly in half from 228k -> 135k nodes, benchmark duration down to 82 ms)
+- Current phase: 5 - Strength Upgrades (Feature 6: Check Extension complete)
+- Acceptance: Phase 5.6 passed (Check extension expands search depth by 1 ply when in check; prevents tactical horizon blunders; tactics tests passing, bench 161k nodes in 146 ms)
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
 - Known issues: none
-- Latest bench: 135,742 nodes @ 1.66 Mnps in 82 ms
-- Elo estimate: ~2450 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS + NMP + LMR)
+- Latest bench: 161,340 nodes @ 1.11 Mnps in 146 ms
+- Elo estimate: ~2500 (Alpha-beta + Quiescence + PeSTO tapered eval + TT + Move Ordering + PVS + NMP + LMR + Check Extension)
 
 ## Completed
 
@@ -63,11 +63,13 @@
 - Phase 5.5: Late Move Reductions (LMR):
   - Quiet, non-killer, non-checking moves searched at reduced depth after move 3
   - Verification re-search at full depth if reduced move beats alpha
-  - Bench node count dropped from 228,508 down to 135,742 nodes in 82 ms
+- Phase 5.6: Check Extension:
+  - Automatically extends search depth by 1 ply when in check (`!board.checkers().is_empty()`)
+  - Eliminates horizon effects where the engine would fail to notice inescapable mate sequences
 
 ## Validation
 
 - `cargo build --release`: Passed
 - `cargo test --test tactics`: Passed
 - `cargo test --test uci_test`: Passed
-- Engine bench: 135,742 nodes in 82 ms (over 295x faster than original baseline search)
+- Engine bench: 161,340 nodes in 146 ms
