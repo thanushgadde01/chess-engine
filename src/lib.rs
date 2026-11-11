@@ -6,4 +6,3 @@ pub mod search;
 pub mod timeman;
 pub mod tt;
 pub mod uci;
-

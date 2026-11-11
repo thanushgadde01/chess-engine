@@ -232,7 +232,10 @@ mod tests {
         let board = Board::default();
         let eval = evaluate(&board);
         // Startpos eval should be very close to 0 (equal material & mirror PST)
-        assert!(eval.abs() < 15, "Startpos eval should be balanced, got {eval}");
+        assert!(
+            eval.abs() < 15,
+            "Startpos eval should be balanced, got {eval}"
+        );
     }
 
     #[test]

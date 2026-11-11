@@ -14,8 +14,9 @@ fn test_perft_startpos_depth_6() {
 
 #[test]
 fn test_perft_kiwipete_depth_4() {
-    let pos = Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
-        .expect("Valid Kiwipete FEN");
+    let pos =
+        Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
+            .expect("Valid Kiwipete FEN");
     assert_eq!(pos.perft(4), 4_085_603);
 }
 
@@ -27,4 +28,3 @@ fn test_perft_divide() {
     assert_eq!(total, 20);
     assert_eq!(divide.len(), 20);
 }
-

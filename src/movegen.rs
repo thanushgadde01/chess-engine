@@ -63,4 +63,3 @@ pub fn parse_uci_move(board: &Board, uci_str: &str) -> Result<Move, String> {
         Err(format!("Illegal move in position: {trimmed}"))
     }
 }
-

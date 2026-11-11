@@ -1,8 +1,8 @@
-use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex};
 use engine::board::Position;
 use engine::search::{self, SearchLimits};
 use engine::tt::{TranspositionTable, DEFAULT_TT_SIZE_MB};
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex};
 
 #[test]
 fn test_mate_in_one() {
@@ -20,7 +20,9 @@ fn test_mate_in_one() {
 
 #[test]
 fn test_mate_in_two() {
-    let pos = Position::from_fen("r1bqkb1r/pppp1ppp/2n5/4p3/2B1n3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4").unwrap();
+    let pos =
+        Position::from_fen("r1bqkb1r/pppp1ppp/2n5/4p3/2B1n3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 0 4")
+            .unwrap();
     let stop = Arc::new(AtomicBool::new(false));
     let limits = SearchLimits {
         depth: Some(3),
@@ -35,10 +37,15 @@ fn test_mate_in_two() {
 fn test_threefold_draw_detection() {
     let mut pos = Position::startpos();
     // 1. Nf3 Nf6 2. Ng1 Ng8 3. Nf3 Nf6 4. Ng1 Ng8
-    let moves = ["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8"];
+    let moves = [
+        "g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6", "f3g1", "f6g8",
+    ];
     for m in moves {
         let mv = m.parse().unwrap();
         pos.play(mv);
     }
-    assert!(pos.is_repetition(), "Repeated position 3 times must detect repetition");
+    assert!(
+        pos.is_repetition(),
+        "Repeated position 3 times must detect repetition"
+    );
 }

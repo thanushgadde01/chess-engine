@@ -71,4 +71,3 @@ fn test_uci_protocol_flow() {
     let status = child.wait().expect("Failed to wait on child process");
     assert!(status.success());
 }
-

@@ -118,8 +118,20 @@ pub fn search(
         }
     };
 
-    let max_depth = limits.depth.unwrap_or(if limits.infinite || hard_limit.is_some() { 64 } else { 4 });
-    let mut ctx = SearchContext::new(stop_flag, soft_limit, hard_limit, limits.nodes, position.history());
+    let max_depth = limits
+        .depth
+        .unwrap_or(if limits.infinite || hard_limit.is_some() {
+            64
+        } else {
+            4
+        });
+    let mut ctx = SearchContext::new(
+        stop_flag,
+        soft_limit,
+        hard_limit,
+        limits.nodes,
+        position.history(),
+    );
 
     let mut best_move = Some(moves[0]);
     let mut history_stack = Vec::with_capacity(64);
@@ -137,8 +149,16 @@ pub fn search(
 
         // Aspiration Windows for depth >= 5
         let mut delta: i32 = 50;
-        let orig_alpha = if d >= 5 { prev_score.saturating_sub(delta).max(-MATE) } else { -MATE };
-        let orig_beta = if d >= 5 { prev_score.saturating_add(delta).min(MATE) } else { MATE };
+        let orig_alpha = if d >= 5 {
+            prev_score.saturating_sub(delta).max(-MATE)
+        } else {
+            -MATE
+        };
+        let orig_beta = if d >= 5 {
+            prev_score.saturating_add(delta).min(MATE)
+        } else {
+            MATE
+        };
         let mut alpha = orig_alpha;
         let mut beta = orig_beta;
 
@@ -153,7 +173,9 @@ pub fn search(
             // Probe TT at root
             let tt_move = {
                 let table = tt.lock().unwrap();
-                table.probe(board.hash(), 0).and_then(|(entry, _)| entry.best_move)
+                table
+                    .probe(board.hash(), 0)
+                    .and_then(|(entry, _)| entry.best_move)
             };
 
             // Order moves using MoveOrdering (TT move, MVV-LVA captures, Killers, History)
@@ -291,7 +313,7 @@ fn is_draw(board: &Board, ctx: &SearchContext, search_history: &[u64]) -> bool {
 
     // Repetition check against prior game history
     let hash = board.hash();
-    if search_history.len() > 1 && search_history[..search_history.len() - 1].iter().any(|&h| h == hash) {
+    if search_history.len() > 1 && search_history[..search_history.len() - 1].contains(&hash) {
         return true;
     }
     if ctx.position_history.iter().filter(|&&h| h == hash).count() >= 2 {
@@ -301,6 +323,7 @@ fn is_draw(board: &Board, ctx: &SearchContext, search_history: &[u64]) -> bool {
     false
 }
 
+#[allow(clippy::too_many_arguments)]
 fn negamax(
     board: &Board,
     depth: u8,
@@ -334,7 +357,11 @@ fn negamax(
 
     // Check extension: extend depth by 1 if in check to avoid tactical horizon effects
     let in_check = !board.checkers().is_empty();
-    let depth = if in_check { depth.saturating_add(1) } else { depth };
+    let depth = if in_check {
+        depth.saturating_add(1)
+    } else {
+        depth
+    };
 
     // Transposition Table probe
     let orig_alpha = alpha;
@@ -444,7 +471,14 @@ fn negamax(
         let is_killer = ordering.killers[ply.min(crate::ordering::MAX_PLY - 1)].contains(&Some(mv));
 
         // Futility Pruning: skip quiet moves that have no chance of raising alpha at shallow depths
-        if !in_check && depth <= 2 && moves_searched > 0 && !is_capture && !is_promotion && !gives_check && !is_killer {
+        if !in_check
+            && depth <= 2
+            && moves_searched > 0
+            && !is_capture
+            && !is_promotion
+            && !gives_check
+            && !is_killer
+        {
             let futility_margin = 150 * depth as i32;
             if static_eval + futility_margin <= alpha {
                 moves_searched += 1;
@@ -471,7 +505,13 @@ fn negamax(
         } else {
             // Late Move Reductions (LMR) for quiet, late moves
             let mut reduction = 0;
-            if depth >= 3 && moves_searched >= 3 && !is_capture && !is_promotion && !gives_check && !is_killer {
+            if depth >= 3
+                && moves_searched >= 3
+                && !is_capture
+                && !is_promotion
+                && !gives_check
+                && !is_killer
+            {
                 reduction = 1;
                 if depth >= 6 && moves_searched >= 6 {
                     reduction = 2;
@@ -572,7 +612,13 @@ fn negamax(
 }
 
 // Quiescence search evaluates tactical captures until a quiet position is reached
-fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext, q_depth: u8) -> i32 {
+fn quiescence(
+    board: &Board,
+    mut alpha: i32,
+    beta: i32,
+    ctx: &mut SearchContext,
+    q_depth: u8,
+) -> i32 {
     if ctx.should_stop() {
         return 0;
     }
@@ -590,7 +636,14 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
     }
 
     // Generate only captures / promotions using a fixed-size stack buffer
-    let mut captures = [(Move { from: cozy_chess::Square::A1, to: cozy_chess::Square::A1, promotion: None }, 0i32); 64];
+    let mut captures = [(
+        Move {
+            from: cozy_chess::Square::A1,
+            to: cozy_chess::Square::A1,
+            promotion: None,
+        },
+        0i32,
+    ); 64];
     let mut num_captures = 0;
     let enemy = !board.side_to_move();
     let enemy_occupied = board.colors(enemy);
@@ -603,7 +656,12 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
             // Delta pruning: if stand_pat + captured piece max value + margin < alpha, skip
             let target_piece = board.piece_on(mv.to);
             let is_ep = match board.en_passant() {
-                Some(ep_file) => board.pieces(Piece::Pawn).has(mv.from) && mv.to.file() == ep_file && (mv.to.rank() == cozy_chess::Rank::Third || mv.to.rank() == cozy_chess::Rank::Sixth),
+                Some(ep_file) => {
+                    board.pieces(Piece::Pawn).has(mv.from)
+                        && mv.to.file() == ep_file
+                        && (mv.to.rank() == cozy_chess::Rank::Third
+                            || mv.to.rank() == cozy_chess::Rank::Sixth)
+                }
                 None => false,
             };
             let is_capture = enemy_occupied.has(mv.to) || is_ep;
@@ -636,8 +694,7 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
     // MVV-LVA move ordering in quiescence: sort captures by captured piece value desc
     captures[..num_captures].sort_unstable_by_key(|&(_, gain)| -gain);
 
-    for i in 0..num_captures {
-        let (mv, _) = captures[i];
+    for &(mv, _) in captures.iter().take(num_captures) {
         let mut next = board.clone();
         next.play(mv);
         ctx.nodes += 1;

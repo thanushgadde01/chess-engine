@@ -33,7 +33,9 @@ impl TimeManager {
         let target = (usable_time / mtg) + (inc / 2);
 
         // Hard limit: strictly capped at at most 80% of usable time (or usable_time - 20ms)
-        let hard_limit = (usable_time * 8 / 10).min(usable_time.saturating_sub(20)).max(10);
+        let hard_limit = (usable_time * 8 / 10)
+            .min(usable_time.saturating_sub(20))
+            .max(10);
         let soft_limit = target.min(hard_limit / 2).max(5);
 
         Some(TimeAllocation {

@@ -104,7 +104,10 @@ fn test_bestmove_is_always_legal_including_after_stop() {
         let (best, _) = search::search(&pos, limits, Arc::clone(&stop), Arc::clone(&tt));
         assert!(best.is_some());
         let m = best.unwrap();
-        assert!(pos.board().is_legal(m), "Bestmove {m} must be legal in {fen}");
+        assert!(
+            pos.board().is_legal(m),
+            "Bestmove {m} must be legal in {fen}"
+        );
 
         // Also test immediate stop condition: must still return a legal move!
         let stop_early = Arc::new(AtomicBool::new(true)); // Already stopped!
@@ -115,6 +118,9 @@ fn test_bestmove_is_always_legal_including_after_stop() {
         let (early_best, _) = search::search(&pos, limits_early, stop_early, Arc::clone(&tt));
         assert!(early_best.is_some());
         let early_m = early_best.unwrap();
-        assert!(pos.board().is_legal(early_m), "Early-stopped move {early_m} must be legal in {fen}");
+        assert!(
+            pos.board().is_legal(early_m),
+            "Early-stopped move {early_m} must be legal in {fen}"
+        );
     }
 }

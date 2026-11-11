@@ -17,9 +17,7 @@ impl Position {
     }
 
     pub fn from_fen(fen: &str) -> Result<Self, String> {
-        let board = fen
-            .parse::<Board>()
-            .map_err(|error| error.to_string())?;
+        let board = fen.parse::<Board>().map_err(|error| error.to_string())?;
         let hash = board.hash();
         Ok(Self {
             board,
@@ -118,9 +116,10 @@ mod tests {
 
     #[test]
     fn kiwipete_perft_depth_three() {
-        let position =
-            Position::from_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1")
-                .unwrap();
+        let position = Position::from_fen(
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+        )
+        .unwrap();
         assert_eq!(position.perft(3), 97_862);
     }
 }

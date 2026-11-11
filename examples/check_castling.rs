@@ -1,4 +1,4 @@
-use cozy_chess::{Board, Move, Piece, Square};
+use cozy_chess::{Board, Piece};
 
 fn main() {
     let board = Board::default();
@@ -20,10 +20,12 @@ fn main() {
         for m in moves {
             let from_p = b.piece_on(m.from);
             if from_p == Some(Piece::King) {
-                println!("King move: from {:?} to {:?} (to_string: {})", m.from, m.to, m);
+                println!(
+                    "King move: from {:?} to {:?} (to_string: {})",
+                    m.from, m.to, m
+                );
             }
         }
         false
     });
 }
-

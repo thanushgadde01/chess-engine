@@ -10,7 +10,10 @@ use std::time::Instant;
 fn test_timeman_allocation_rules() {
     // 1+0 clock: 60,000 ms remaining, 0 inc
     let alloc = TimeManager::allocate(Some(60_000), Some(0), None).unwrap();
-    assert!(alloc.max_time_ms < 60_000, "Hard limit must be well below remaining");
+    assert!(
+        alloc.max_time_ms < 60_000,
+        "Hard limit must be well below remaining"
+    );
     assert!(alloc.optimum_time_ms <= alloc.max_time_ms);
     // 10+0.1 clock: 600,000 ms, 100 ms inc
     let alloc2 = TimeManager::allocate(Some(600_000), Some(100), Some(30)).unwrap();
@@ -75,4 +78,3 @@ fn test_one_plus_zero_simulation_clock() {
         assert!(time_left > 0, "Time left must stay positive");
     }
 }
-

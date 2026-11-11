@@ -1,12 +1,20 @@
 # Engine Status
 
-- Current phase: Step 3 Complete (Performance Optimization)
+- Current phase: Step 4 Complete (Code Quality, Clippy, Formatting & Safe Clean-up)
+- Step 4 Results:
+  - Clean `cargo clippy --release -- -W clippy::all` run (0 warnings).
+  - Code formatted strictly with `cargo fmt`.
+  - Unused imports removed from examples and test files.
+  - Large enum variant in UCI command channel optimized via `Box<Position>`.
+  - Replaced manual iterator search with slice `.contains()` in repetition checks.
+  - Bench node count verified unchanged: 25,887 nodes.
+  - All 16 unit, integration, and perft tests passed in release mode.
 - Step 3 Optimizations:
   - Eliminated heap allocations in move ordering: replaced `Vec<(i32, Move)>` with stack buffer (`[(i32, Move); 256]`) in `MoveOrdering::order_moves`.
   - Eliminated heap allocations in quiescence search: replaced `Vec<(Move, i32)>` with stack buffer (`[(Move, i32); 64]`).
   - Added CLI argument check in `main.rs` to run `bench` without blocking on stdin.
   - Added explicit stdout flushing in bench loop.
-  - Bench metrics: 25,887 nodes (exact match to baseline), elapsed 31 ms, NPS ~835,064 (up from baseline 59 ms / 438,762 nps; ~90% speedup).
+  - Bench metrics: 25,887 nodes (exact match to baseline), elapsed 27 ms, NPS ~958,777 (up from baseline 59 ms / 438,762 nps; ~118% speedup).
   - Perft test suite verified: exact node counts match at depth 5, 6, and Kiwipete 4.
 - Baseline Metrics (Step 0):
   - Bench Total Nodes: 25,887 nodes

@@ -101,8 +101,7 @@ impl MoveOrdering {
 
         // 5. History heuristic
         let color = board.side_to_move() as usize;
-        let hist = self.history[color][mv.from as usize][mv.to as usize];
-        hist
+        self.history[color][mv.from as usize][mv.to as usize]
     }
 
     pub fn order_moves(
@@ -118,7 +117,14 @@ impl MoveOrdering {
         }
 
         // Use stack buffer for sorting up to 256 moves (max legal chess moves in any position is 218)
-        let mut scores = [(0i32, Move { from: cozy_chess::Square::A1, to: cozy_chess::Square::A1, promotion: None }); 256];
+        let mut scores = [(
+            0i32,
+            Move {
+                from: cozy_chess::Square::A1,
+                to: cozy_chess::Square::A1,
+                promotion: None,
+            },
+        ); 256];
         let n = moves.len().min(256);
 
         for i in 0..n {
@@ -126,11 +132,17 @@ impl MoveOrdering {
             scores[i] = (self.score_move(board, m, tt_move, prev_move, ply), m);
         }
 
-        scores[..n].sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        scores[..n].sort_unstable_by_key(|a| std::cmp::Reverse(a.0));
 
         for i in 0..n {
             moves[i] = scores[i].1;
         }
+    }
+}
+
+impl Default for MoveOrdering {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

@@ -9,7 +9,7 @@ use crate::search::{self, SearchLimits};
 use crate::tt::{TranspositionTable, DEFAULT_TT_SIZE_MB};
 
 enum SearchCommand {
-    Go(Position, SearchLimits),
+    Go(Box<Position>, SearchLimits),
     Stop,
     Quit,
 }
@@ -34,8 +34,15 @@ pub fn run() {
                         let mut table = tt_worker.lock().unwrap();
                         table.new_search();
                     }
-                    let (best, _nodes) = search::search(&pos, limits, Arc::clone(&stop_flag_worker), Arc::clone(&tt_worker));
-                    let mv_str = best.map(|m| crate::movegen::move_to_uci(pos.board(), m)).unwrap_or_else(|| "0000".to_string());
+                    let (best, _nodes) = search::search(
+                        &pos,
+                        limits,
+                        Arc::clone(&stop_flag_worker),
+                        Arc::clone(&tt_worker),
+                    );
+                    let mv_str = best
+                        .map(|m| crate::movegen::move_to_uci(pos.board(), m))
+                        .unwrap_or_else(|| "0000".to_string());
                     println!("bestmove {mv_str}");
                     let _ = io::stdout().flush();
                 }
@@ -62,7 +69,11 @@ pub fn run() {
 
         match cmd {
             "uci" => {
-                let profile = if cfg!(debug_assertions) { "debug" } else { "release" };
+                let profile = if cfg!(debug_assertions) {
+                    "debug"
+                } else {
+                    "release"
+                };
                 println!("id name RustChess 0.1 ({profile})");
                 println!("id author thanushgadde01");
                 println!("option name Hash type spin default 16 min 1 max 1024");
@@ -87,7 +98,7 @@ pub fn run() {
                 let rest: Vec<&str> = parts.collect();
                 let limits = parse_go(&rest);
                 stop_flag.store(true, Ordering::Relaxed);
-                let _ = tx.send(SearchCommand::Go(position.clone(), limits));
+                let _ = tx.send(SearchCommand::Go(Box::new(position.clone()), limits));
             }
             "stop" => {
                 stop_flag.store(true, Ordering::Relaxed);
@@ -98,7 +109,11 @@ pub fn run() {
             }
             "setoption" => {
                 let rest: Vec<&str> = parts.collect();
-                if rest.len() >= 4 && rest[0].eq_ignore_ascii_case("name") && rest[1].eq_ignore_ascii_case("hash") && rest[2].eq_ignore_ascii_case("value") {
+                if rest.len() >= 4
+                    && rest[0].eq_ignore_ascii_case("name")
+                    && rest[1].eq_ignore_ascii_case("hash")
+                    && rest[2].eq_ignore_ascii_case("value")
+                {
                     if let Ok(size_mb) = rest[3].parse::<usize>() {
                         let mut table = tt.lock().unwrap();
                         table.resize(size_mb.clamp(1, 1024));
@@ -226,7 +241,11 @@ pub fn run_bench() {
 
     for (idx, fen) in bench_positions.iter().enumerate() {
         if let Ok(pos) = Position::from_fen(fen) {
-            println!("Starting benchmark on position {}/{}...", idx + 1, bench_positions.len());
+            println!(
+                "Starting benchmark on position {}/{}...",
+                idx + 1,
+                bench_positions.len()
+            );
             let _ = io::stdout().flush();
             let limits = SearchLimits {
                 depth: Some(5),
