@@ -1,15 +1,20 @@
 # Engine Status
 
-- Current phase: Complete through Phase 7 (Ready for Local & Lichess play)
-- Acceptance: All Phase 0-7 milestones passed and Definition of Done verified
+- Current phase: Step 0 Complete (Baseline Recorded)
+- Acceptance: Baseline verified with release build, perft tests, and bench
 - Toolchain:
   - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
   - host: x86_64-pc-windows-msvc
   - cargo: 1.99.1 (5f94df478 2026-08-27)
   - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
-- Known issues: none
-- Latest bench: 25,887 nodes @ 1.23 Mnps in 21 ms (sub-25ms benchmark)
-- Elo estimate: ~2600-2700 (Full Phase 5 search stack + PeSTO tapered eval + TT)
+- Known issues: Need UCI castling notation check/fix (e1g1 vs e1h1 king-takes-rook)
+- Baseline Metrics (Step 0):
+  - Bench Total Nodes: 25,887 nodes
+  - Bench Time: 59 ms (~438,762 nps recorded across 6 positions)
+  - Perft startpos depth 5: 4,865,609 nodes (passed)
+  - Perft startpos depth 6: 119,060,324 nodes (passed in 4.34s)
+  - Perft kiwipete depth 4: 4,085,603 nodes (passed)
+  - Baseline binary saved at `tools\bin\engine-baseline.exe`
 
 ## Completed Milestones
 
