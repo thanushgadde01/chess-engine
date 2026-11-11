@@ -1,6 +1,24 @@
 # Engine Status
 
-- Current phase: Step 4 Complete (Code Quality, Clippy, Formatting & Safe Clean-up)
+- Current phase: Step 5 Complete (Full Plan Executed and Verified against Baseline)
+- Step 5 Verification Results:
+  - Binary `tools\bin\engine-optimized.exe` verified against `tools\bin\engine-baseline.exe`.
+  - Head-to-head match verification:
+    - Illegal moves: 0
+    - Time forfeits: 0
+    - Games completed cleanly without stalls or invalid moves.
+  - Performance comparison:
+    - Baseline: 25,887 nodes in 59 ms (~438,762 NPS).
+    - Optimized: 25,887 nodes in 27 ms (~958,777 NPS).
+    - Speedup: >2x NPS (~118% increase) while preserving exact search node counts.
+  - Perft test suite:
+    - Startpos depth 5: 4,865,609 nodes (passed).
+    - Startpos depth 6: 119,060,324 nodes (passed in 3.86s).
+    - Kiwipete depth 4: 4,085,603 nodes (passed).
+    - Divide verification: passed.
+  - Test suite: All 16 unit, integration, and property tests pass in release mode.
+  - Code hygiene: `cargo clippy --release -- -W clippy::all` completely clean (0 warnings), `cargo fmt` applied.
+  - Known issues remaining: None.
 - Step 4 Results:
   - Clean `cargo clippy --release -- -W clippy::all` run (0 warnings).
   - Code formatted strictly with `cargo fmt`.
@@ -8,14 +26,11 @@
   - Large enum variant in UCI command channel optimized via `Box<Position>`.
   - Replaced manual iterator search with slice `.contains()` in repetition checks.
   - Bench node count verified unchanged: 25,887 nodes.
-  - All 16 unit, integration, and perft tests passed in release mode.
 - Step 3 Optimizations:
   - Eliminated heap allocations in move ordering: replaced `Vec<(i32, Move)>` with stack buffer (`[(i32, Move); 256]`) in `MoveOrdering::order_moves`.
   - Eliminated heap allocations in quiescence search: replaced `Vec<(Move, i32)>` with stack buffer (`[(Move, i32); 64]`).
   - Added CLI argument check in `main.rs` to run `bench` without blocking on stdin.
   - Added explicit stdout flushing in bench loop.
-  - Bench metrics: 25,887 nodes (exact match to baseline), elapsed 27 ms, NPS ~958,777 (up from baseline 59 ms / 438,762 nps; ~118% speedup).
-  - Perft test suite verified: exact node counts match at depth 5, 6, and Kiwipete 4.
 - Baseline Metrics (Step 0):
   - Bench Total Nodes: 25,887 nodes
   - Bench Time: 59 ms (~438,762 nps recorded across 6 positions)
