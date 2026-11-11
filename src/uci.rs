@@ -62,7 +62,8 @@ pub fn run() {
 
         match cmd {
             "uci" => {
-                println!("id name RustChess 0.1");
+                let profile = if cfg!(debug_assertions) { "debug" } else { "release" };
+                println!("id name RustChess 0.1 ({profile})");
                 println!("id author thanushgadde01");
                 println!("option name Hash type spin default 16 min 1 max 1024");
                 println!("uciok");

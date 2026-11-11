@@ -30,7 +30,8 @@ pub struct SearchContext<'a> {
     pub nodes: u64,
     pub stop_flag: Arc<AtomicBool>,
     pub start_time: Instant,
-    pub time_limit_ms: Option<u64>,
+    pub soft_time_limit_ms: Option<u64>,
+    pub hard_time_limit_ms: Option<u64>,
     pub max_nodes: Option<u64>,
     pub position_history: &'a [u64],
 }
@@ -38,7 +39,8 @@ pub struct SearchContext<'a> {
 impl<'a> SearchContext<'a> {
     pub fn new(
         stop_flag: Arc<AtomicBool>,
-        time_limit_ms: Option<u64>,
+        soft_time_limit_ms: Option<u64>,
+        hard_time_limit_ms: Option<u64>,
         max_nodes: Option<u64>,
         position_history: &'a [u64],
     ) -> Self {
@@ -46,7 +48,8 @@ impl<'a> SearchContext<'a> {
             nodes: 0,
             stop_flag,
             start_time: Instant::now(),
-            time_limit_ms,
+            soft_time_limit_ms,
+            hard_time_limit_ms,
             max_nodes,
             position_history,
         }
@@ -58,10 +61,10 @@ impl<'a> SearchContext<'a> {
             return true;
         }
 
-        // Check periodic clock/nodes every 2048 nodes
+        // Check periodic clock and stop flag every 2048 nodes
         if (self.nodes & 2047) == 0 {
-            if let Some(limit) = self.time_limit_ms {
-                if self.start_time.elapsed().as_millis() as u64 >= limit {
+            if let Some(hard_limit) = self.hard_time_limit_ms {
+                if self.start_time.elapsed().as_millis() as u64 >= hard_limit {
                     self.stop_flag.store(true, Ordering::Relaxed);
                     return true;
                 }
@@ -75,6 +78,15 @@ impl<'a> SearchContext<'a> {
         }
 
         false
+    }
+
+    #[inline(always)]
+    pub fn past_soft_limit(&self) -> bool {
+        if let Some(soft_limit) = self.soft_time_limit_ms {
+            self.start_time.elapsed().as_millis() as u64 >= soft_limit
+        } else {
+            false
+        }
     }
 }
 
@@ -91,23 +103,28 @@ pub fn search(
     }
 
     // Determine time allocation
-    let time_limit = if let Some(mt) = limits.movetime {
-        Some(mt.saturating_sub(10).max(1))
+    let (soft_limit, hard_limit) = if let Some(mt) = limits.movetime {
+        let hard = mt.saturating_sub(10).max(1);
+        (Some(hard), Some(hard))
     } else {
         let (my_time, my_inc) = match board.side_to_move() {
             cozy_chess::Color::White => (limits.wtime, limits.winc),
             cozy_chess::Color::Black => (limits.btime, limits.binc),
         };
-        TimeManager::allocate(my_time, my_inc, limits.movestogo).map(|d| d.as_millis() as u64)
+        if let Some(alloc) = TimeManager::allocate(my_time, my_inc, limits.movestogo) {
+            (Some(alloc.optimum_time_ms), Some(alloc.max_time_ms))
+        } else {
+            (None, None)
+        }
     };
 
-    let max_depth = limits.depth.unwrap_or(if limits.infinite || time_limit.is_some() { 64 } else { 4 });
-    let mut ctx = SearchContext::new(stop_flag, time_limit, limits.nodes, position.history());
+    let max_depth = limits.depth.unwrap_or(if limits.infinite || hard_limit.is_some() { 64 } else { 4 });
+    let mut ctx = SearchContext::new(stop_flag, soft_limit, hard_limit, limits.nodes, position.history());
 
     let mut best_move = Some(moves[0]);
     let mut history_stack = Vec::with_capacity(64);
     let mut ordering = MoveOrdering::new();
-    let mut prev_score = 0;
+    let mut prev_score: i32 = 0;
 
     // Iterative deepening
     for d in 1..=max_depth {
@@ -119,9 +136,9 @@ pub fn search(
         let mut best_score = -MATE;
 
         // Aspiration Windows for depth >= 5
-        let mut delta = 50;
-        let orig_alpha = if d >= 5 { (prev_score - delta).max(-MATE) } else { -MATE };
-        let orig_beta = if d >= 5 { (prev_score + delta).min(MATE) } else { MATE };
+        let mut delta: i32 = 50;
+        let orig_alpha = if d >= 5 { prev_score.saturating_sub(delta).max(-MATE) } else { -MATE };
+        let orig_beta = if d >= 5 { prev_score.saturating_add(delta).min(MATE) } else { MATE };
         let mut alpha = orig_alpha;
         let mut beta = orig_beta;
 
@@ -188,13 +205,13 @@ pub fn search(
                 if best_score <= orig_alpha {
                     // Fail-low: expand alpha downward, reset beta
                     delta = delta.saturating_mul(2);
-                    alpha = (prev_score - delta).max(-MATE);
-                    beta = (prev_score + delta).min(MATE);
+                    alpha = prev_score.saturating_sub(delta).max(-MATE);
+                    beta = prev_score.saturating_add(delta).min(MATE);
                 } else if best_score >= orig_beta {
                     // Fail-high: expand beta upward, reset alpha
                     delta = delta.saturating_mul(2);
-                    alpha = (prev_score - delta).max(-MATE);
-                    beta = (prev_score + delta).min(MATE);
+                    alpha = prev_score.saturating_sub(delta).max(-MATE);
+                    beta = prev_score.saturating_add(delta).min(MATE);
                 } else {
                     // Score is cleanly inside window
                     break;
@@ -239,7 +256,13 @@ pub fn search(
             if best_score.abs() > MATE_BOUND && d >= ((MATE - best_score.abs()) as u8) {
                 break;
             }
+
+            // Stop starting a new depth if we reached the soft time limit
+            if ctx.past_soft_limit() {
+                break;
+            }
         } else {
+            // Interrupted mid-depth: break out and return best_move from last COMPLETED depth!
             break;
         }
     }

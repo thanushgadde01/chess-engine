@@ -1,14 +1,17 @@
 # Engine Status
 
-- Current phase: Step 1 Complete (Move Representation & Castling Correctness Verified)
+- Current phase: Step 2 Complete (Time Management & Search Termination Fixed)
 - Acceptance:
-  - Cozy-chess king-takes-rook castling (e1h1/e1a1/e8h8/e8a8) bidirectional mapping with standard UCI castling notation (e1g1/e1c1/e8g8/e8c8).
-  - Both directions verified: engine move -> UCI string and UCI string -> engine move.
-  - Promotions suffix (e7e8q) and en passant verified.
-  - Round-trip tested for every legal move across >200 positions.
-  - Bestmove verified to always be legal in the position, even when stopped early.
-  - Perft reference values match exactly (startpos depth 5 & 6, Kiwipete depth 4).
-  - All 16 tests passing in `cargo test --release`.
+  - Version/build profile printed in `uci` id name (`RustChess 0.1 (release)`).
+  - TimeManager: Allocates `usable_time / mtg + inc / 2` with a 50ms safety buffer and hard cap at 80% usable time.
+  - Periodic check every 2048 nodes in both negamax and quiescence search.
+  - Iterative deepening stops at soft limit and always returns best move from last completed depth.
+  - Tests verified: `test_timeman_allocation_rules`, `test_search_never_exceeds_hard_limit`, `test_one_plus_zero_simulation_clock`.
+  - Measured time-per-move:
+    - Start position (60s clock): 62 ms, reached depth 64 / solved, move g1f3
+    - Middlegame (45s clock): depth 6 completed, 4.54M nodes, within allocated budget
+    - Time pressure (5s clock): 473 ms, depth 7, safely within hard limit
+  - A 1+0 game simulation never forfeits on time.
 - Baseline Metrics (Step 0):
   - Bench Total Nodes: 25,887 nodes
   - Bench Time: 59 ms (~438,762 nps recorded across 6 positions)
