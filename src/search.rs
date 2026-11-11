@@ -232,7 +232,7 @@ pub fn search(
             println!(
                 "info depth {d} score {score_str} nodes {} time {elapsed_ms} nps {nps} pv {}",
                 ctx.nodes,
-                best_move.unwrap()
+                crate::movegen::move_to_uci(board, best_move.unwrap())
             );
 
             // If we found a forced mate score at root, we can conclude search

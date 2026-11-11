@@ -4,8 +4,6 @@ use std::sync::mpsc::channel;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
-use cozy_chess::Move;
-
 use crate::board::Position;
 use crate::search::{self, SearchLimits};
 use crate::tt::{TranspositionTable, DEFAULT_TT_SIZE_MB};
@@ -37,7 +35,7 @@ pub fn run() {
                         table.new_search();
                     }
                     let (best, _nodes) = search::search(&pos, limits, Arc::clone(&stop_flag_worker), Arc::clone(&tt_worker));
-                    let mv_str = best.map(|m| m.to_string()).unwrap_or_else(|| "0000".to_string());
+                    let mv_str = best.map(|m| crate::movegen::move_to_uci(pos.board(), m)).unwrap_or_else(|| "0000".to_string());
                     println!("bestmove {mv_str}");
                     let _ = io::stdout().flush();
                 }
@@ -140,12 +138,7 @@ fn parse_position(position: &mut Position, tokens: &[&str]) -> Result<(), String
 
     if let Some(index) = tokens.iter().position(|&p| p == "moves") {
         for &notation in &tokens[index + 1..] {
-            let mv = notation
-                .parse::<Move>()
-                .map_err(|_| format!("invalid move {notation}"))?;
-            if !position.board().is_legal(mv) {
-                return Err(format!("illegal move {notation}"));
-            }
+            let mv = crate::movegen::parse_uci_move(position.board(), notation)?;
             position.play(mv);
         }
     }

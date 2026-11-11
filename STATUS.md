@@ -1,13 +1,14 @@
 # Engine Status
 
-- Current phase: Step 0 Complete (Baseline Recorded)
-- Acceptance: Baseline verified with release build, perft tests, and bench
-- Toolchain:
-  - rustc: 1.99.1 (58cf8f9c3 2026-10-13)
-  - host: x86_64-pc-windows-msvc
-  - cargo: 1.99.1 (5f94df478 2026-08-27)
-  - link.exe: `C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64\link.exe`
-- Known issues: Need UCI castling notation check/fix (e1g1 vs e1h1 king-takes-rook)
+- Current phase: Step 1 Complete (Move Representation & Castling Correctness Verified)
+- Acceptance:
+  - Cozy-chess king-takes-rook castling (e1h1/e1a1/e8h8/e8a8) bidirectional mapping with standard UCI castling notation (e1g1/e1c1/e8g8/e8c8).
+  - Both directions verified: engine move -> UCI string and UCI string -> engine move.
+  - Promotions suffix (e7e8q) and en passant verified.
+  - Round-trip tested for every legal move across >200 positions.
+  - Bestmove verified to always be legal in the position, even when stopped early.
+  - Perft reference values match exactly (startpos depth 5 & 6, Kiwipete depth 4).
+  - All 16 tests passing in `cargo test --release`.
 - Baseline Metrics (Step 0):
   - Bench Total Nodes: 25,887 nodes
   - Bench Time: 59 ms (~438,762 nps recorded across 6 positions)
