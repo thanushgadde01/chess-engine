@@ -226,6 +226,8 @@ pub fn run_bench() {
 
     for (idx, fen) in bench_positions.iter().enumerate() {
         if let Ok(pos) = Position::from_fen(fen) {
+            println!("Starting benchmark on position {}/{}...", idx + 1, bench_positions.len());
+            let _ = io::stdout().flush();
             let limits = SearchLimits {
                 depth: Some(5),
                 ..Default::default()
@@ -233,7 +235,8 @@ pub fn run_bench() {
             let stop = Arc::new(AtomicBool::new(false));
             let (_mv, nodes) = search::search(&pos, limits, stop, Arc::clone(&tt));
             total_nodes += nodes;
-            eprintln!("Bench [{}/{}] nodes: {}", idx + 1, bench_positions.len(), nodes);
+            println!("Position {} finished: {} nodes", idx + 1, nodes);
+            let _ = io::stdout().flush();
         }
     }
 

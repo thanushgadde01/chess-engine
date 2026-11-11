@@ -113,16 +113,23 @@ impl MoveOrdering {
         prev_move: Option<Move>,
         ply: usize,
     ) {
-        let mut scores: Vec<(i32, Move)> = moves
-            .iter()
-            .map(|&m| (self.score_move(board, m, tt_move, prev_move, ply), m))
-            .collect();
+        if moves.len() <= 1 {
+            return;
+        }
 
-        // Sort descending by score
-        scores.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        // Use stack buffer for sorting up to 256 moves (max legal chess moves in any position is 218)
+        let mut scores = [(0i32, Move { from: cozy_chess::Square::A1, to: cozy_chess::Square::A1, promotion: None }); 256];
+        let n = moves.len().min(256);
 
-        for (i, (_, m)) in scores.into_iter().enumerate() {
-            moves[i] = m;
+        for i in 0..n {
+            let m = moves[i];
+            scores[i] = (self.score_move(board, m, tt_move, prev_move, ply), m);
+        }
+
+        scores[..n].sort_unstable_by(|a, b| b.0.cmp(&a.0));
+
+        for i in 0..n {
+            moves[i] = scores[i].1;
         }
     }
 }

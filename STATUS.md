@@ -1,17 +1,13 @@
 # Engine Status
 
-- Current phase: Step 2 Complete (Time Management & Search Termination Fixed)
-- Acceptance:
-  - Version/build profile printed in `uci` id name (`RustChess 0.1 (release)`).
-  - TimeManager: Allocates `usable_time / mtg + inc / 2` with a 50ms safety buffer and hard cap at 80% usable time.
-  - Periodic check every 2048 nodes in both negamax and quiescence search.
-  - Iterative deepening stops at soft limit and always returns best move from last completed depth.
-  - Tests verified: `test_timeman_allocation_rules`, `test_search_never_exceeds_hard_limit`, `test_one_plus_zero_simulation_clock`.
-  - Measured time-per-move:
-    - Start position (60s clock): 62 ms, reached depth 64 / solved, move g1f3
-    - Middlegame (45s clock): depth 6 completed, 4.54M nodes, within allocated budget
-    - Time pressure (5s clock): 473 ms, depth 7, safely within hard limit
-  - A 1+0 game simulation never forfeits on time.
+- Current phase: Step 3 Complete (Performance Optimization)
+- Step 3 Optimizations:
+  - Eliminated heap allocations in move ordering: replaced `Vec<(i32, Move)>` with stack buffer (`[(i32, Move); 256]`) in `MoveOrdering::order_moves`.
+  - Eliminated heap allocations in quiescence search: replaced `Vec<(Move, i32)>` with stack buffer (`[(Move, i32); 64]`).
+  - Added CLI argument check in `main.rs` to run `bench` without blocking on stdin.
+  - Added explicit stdout flushing in bench loop.
+  - Bench metrics: 25,887 nodes (exact match to baseline), elapsed 31 ms, NPS ~835,064 (up from baseline 59 ms / 438,762 nps; ~90% speedup).
+  - Perft test suite verified: exact node counts match at depth 5, 6, and Kiwipete 4.
 - Baseline Metrics (Step 0):
   - Bench Total Nodes: 25,887 nodes
   - Bench Time: 59 ms (~438,762 nps recorded across 6 positions)

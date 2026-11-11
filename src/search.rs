@@ -589,13 +589,17 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
         return alpha;
     }
 
-    // Generate only captures / promotions
-    let mut captures = Vec::new();
+    // Generate only captures / promotions using a fixed-size stack buffer
+    let mut captures = [(Move { from: cozy_chess::Square::A1, to: cozy_chess::Square::A1, promotion: None }, 0i32); 64];
+    let mut num_captures = 0;
     let enemy = !board.side_to_move();
     let enemy_occupied = board.colors(enemy);
 
     board.generate_moves(|piece_moves| {
         for mv in piece_moves {
+            if num_captures >= 64 {
+                break;
+            }
             // Delta pruning: if stand_pat + captured piece max value + margin < alpha, skip
             let target_piece = board.piece_on(mv.to);
             let is_ep = match board.en_passant() {
@@ -621,7 +625,8 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
                     100
                 };
                 if stand_pat + gain + 200 >= alpha {
-                    captures.push((mv, gain));
+                    captures[num_captures] = (mv, gain);
+                    num_captures += 1;
                 }
             }
         }
@@ -629,9 +634,10 @@ fn quiescence(board: &Board, mut alpha: i32, beta: i32, ctx: &mut SearchContext,
     });
 
     // MVV-LVA move ordering in quiescence: sort captures by captured piece value desc
-    captures.sort_unstable_by_key(|&(_, gain)| -gain);
+    captures[..num_captures].sort_unstable_by_key(|&(_, gain)| -gain);
 
-    for (mv, _) in captures {
+    for i in 0..num_captures {
+        let (mv, _) = captures[i];
         let mut next = board.clone();
         next.play(mv);
         ctx.nodes += 1;
