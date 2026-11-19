@@ -1,6 +1,13 @@
 # Engine Status
 
 - Current phase: Phase 5 Upgrades (SEE Implementation Next)
+- Gauntlet vs Timecat (`tools\bin\timecat.exe`, 100 games, 100ms, balanced openings):
+  - Engine A (`tools/bin/engine-optimized.exe`) vs Engine B (`tools/bin/timecat.exe`):
+    - Score: 0W / 100L / 0D (0.0% win rate)
+    - Illegal moves: 0 (both engines 100% legal)
+    - Time forfeits: 0 (zero timeouts across 100 games)
+    - Avg NPS: Engine A: 1,758,213 NPS vs Timecat: 417,141 NPS (~4.2x raw node throughput)
+    - Key Observation: While our raw NPS is 4.2x higher, Timecat features Static Exchange Evaluation (SEE), good/bad capture segregation, smooth LMR, and deeper tactical tree pruning that out-searches our purely MVV-LVA/heuristic ordering.
 - Benchmark (10 varied positions, depth 10, 2,436,352 nodes):
   - Baseline (`tools\bin\engine-baseline.exe`):
     - Trial 1: 2,436,352 nodes in 3.776s (645,280 NPS)
