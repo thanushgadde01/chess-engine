@@ -1,6 +1,37 @@
 # Engine Status
 
-- Current phase: Step 5 Complete (Full Plan Executed and Verified against Baseline)
+- Current phase: Phase 5 Upgrades (SEE Implementation Next)
+- Benchmark (10 varied positions, depth 10, 2,436,352 nodes):
+  - Baseline (`tools\bin\engine-baseline.exe`):
+    - Trial 1: 2,436,352 nodes in 3.776s (645,280 NPS)
+    - Trial 2: 2,436,352 nodes in 3.813s (638,904 NPS)
+    - Trial 3: 2,436,352 nodes in 3.753s (649,143 NPS)
+    - Average NPS: ~644,442 NPS
+  - Optimized (`tools\bin\engine-optimized.exe`):
+    - Trial 1: 2,436,352 nodes in 2.912s (836,761 NPS)
+    - Trial 2: 2,436,352 nodes in 2.977s (818,505 NPS)
+    - Trial 3: 2,436,352 nodes in 2.872s (848,457 NPS)
+    - Average NPS: ~834,574 NPS (+29.5% faster execution)
+- Real Match Results (`tools/play_match.py`, 10 games, 300ms movetime):
+  - Score: 0W / 10D / 0L (50.0%)
+  - Elo Difference: 0.0 ± 45
+  - Illegal moves: 0
+  - Time forfeits: 0
+- Top 3 Hotspots:
+  1. Move Generation & Legal Filtering (`cozy_chess::generate_moves`) (~45% CPU)
+  2. Static Evaluation & PSQT Table Lookups (`src/eval.rs: evaluate`) (~30% CPU)
+  3. Move Ordering & Scoring (`src/ordering.rs`) (~18% CPU)
+- Phase 5 Feature Checklist:
+  - [x] Transposition Table
+  - [x] Move Ordering (TT, MVV-LVA, Killers, Countermoves, History)
+  - [x] Principal Variation Search (PVS)
+  - [x] Null-Move Pruning (NMP)
+  - [x] Late Move Reductions (LMR)
+  - [x] Check Extensions
+  - [x] Aspiration Windows
+  - [x] Futility & Reverse Futility Pruning
+  - [ ] Static Exchange Evaluation (SEE) - in progress
+  - [ ] Continuation History - pending SEE
 - Step 5 Verification Results:
   - Binary `tools\bin\engine-optimized.exe` verified against `tools\bin\engine-baseline.exe`.
   - Head-to-head match verification:
