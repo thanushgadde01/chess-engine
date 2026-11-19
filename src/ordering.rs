@@ -69,8 +69,9 @@ impl MoveOrdering {
         let target_piece = board.piece_on(mv.to);
         let attacker_piece = board.piece_on(mv.from);
 
-        // 2. Captures scored by MVV-LVA
+        // 2. Captures scored by SEE and MVV-LVA
         if is_capture || mv.promotion.is_some() {
+            let see_val = crate::see::see(board, mv);
             let victim_val = if let Some(p) = target_piece {
                 piece_val(p)
             } else {
@@ -78,7 +79,14 @@ impl MoveOrdering {
             };
             let attacker_val = attacker_piece.map(piece_val).unwrap_or(100);
             let promo_val = if mv.promotion.is_some() { 800 } else { 0 };
-            return 100_000 + (victim_val * 10 - attacker_val) + promo_val;
+
+            if see_val >= 0 {
+                // Winning or equal capture: high priority above killers
+                return 100_000 + (victim_val * 10 - attacker_val) + promo_val + see_val;
+            } else {
+                // Losing capture: demoted below quiet killers and countermoves
+                return -50_000 + see_val;
+            }
         }
 
         // 3. Killer moves

@@ -1,6 +1,17 @@
 # Engine Status
 
-- Current phase: Phase 5 Upgrades (SEE Implementation Next)
+- Current phase: Phase 5 Upgrades (SEE Implemented & Accepted)
+- Step 5.9: Static Exchange Evaluation (SEE):
+  - Implementation: `src/see.rs` with minimax back-propagation over least valuable attackers.
+  - Quiescence Search: Pruning losing captures (`see < 0`).
+  - Move Ordering: Segregating good/equal captures ($\ge 0$) with high bonus, demoting bad captures ($< 0$) below quiet killer/countermoves.
+  - Match Result vs previous accepted build (`engine-optimized.exe`):
+    - 100 games at 100ms/move, balanced openings.
+    - Score: 42 Wins / 36 Losses / 22 Draws (53.0% win rate).
+    - Elo difference: +20.9 ± 90.1 Elo.
+    - Illegal moves: 0.
+    - Time forfeits: 0.
+    - Result: **ACCEPTED** and promoted to `tools/bin/engine-optimized.exe` and `tools/bin/engine-play.exe`.
 - Gauntlet vs Timecat (`tools\bin\timecat.exe`, 100 games, 100ms, balanced openings):
   - Engine A (`tools/bin/engine-optimized.exe`) vs Engine B (`tools/bin/timecat.exe`):
     - Score: 0W / 100L / 0D (0.0% win rate)
@@ -37,8 +48,12 @@
   - [x] Check Extensions
   - [x] Aspiration Windows
   - [x] Futility & Reverse Futility Pruning
-  - [ ] Static Exchange Evaluation (SEE) - in progress
-  - [ ] Continuation History - pending SEE
+  - [x] Static Exchange Evaluation (SEE) - Implemented & Accepted (+20.9 Elo)
+  - [ ] Capture-only move generation in quiescence (Top Idea #2)
+  - [ ] Logarithmic Late Move Reductions (Top Idea #3)
+  - [ ] Incremental PSQT & Phase updates (Top Idea #4)
+  - [ ] Configurable UCI Hash option (Top Idea #5)
+  - [ ] Continuation History - pending
 - Step 5 Verification Results:
   - Binary `tools\bin\engine-optimized.exe` verified against `tools\bin\engine-baseline.exe`.
   - Head-to-head match verification:

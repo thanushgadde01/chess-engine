@@ -39,7 +39,8 @@
 ## Top Ideas Ranked by Expected Gain vs Risk
 
 1. **SEE (Static Exchange Evaluation) for Captures & Move Ordering** (Expected Gain: +50-80 Elo, Risk: Low)
-2. **Incremental PSQT & Phase Updates in make/unmake** (Expected Gain: +30-40% NPS, Risk: Low)
-3. **Capture-Only Move Generation in Quiescence** (Expected Gain: +40% QS speedup, Risk: Low)
-4. **Logarithmic / Smooth Late Move Reductions (LMR)** (Expected Gain: +30-40 Elo, Risk: Low-Medium)
+   - **Result: ACCEPTED.** Match vs previous accepted build: 42W / 36L / 22D (53.0%), **+20.9 Elo**. Promoted to accepted baseline.
+2. **Capture-Only Move Generation in Quiescence** (Expected Gain: +40% QS speedup, Risk: Low)
+3. **Logarithmic / Smooth Late Move Reductions (LMR)** (Expected Gain: +30-40 Elo, Risk: Low-Medium)
+4. **Incremental PSQT & Phase Updates in make/unmake** (Expected Gain: +30-40% NPS, Risk: Low)
 5. **Configurable UCI `Hash` Option & TT Bucketing** (Expected Gain: +20-30 Elo, Risk: Low)

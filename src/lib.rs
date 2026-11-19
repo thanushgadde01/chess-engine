@@ -3,6 +3,7 @@ pub mod eval;
 pub mod movegen;
 pub mod ordering;
 pub mod search;
+pub mod see;
 pub mod timeman;
 pub mod tt;
 pub mod uci;

@@ -695,6 +695,12 @@ fn quiescence(
     captures[..num_captures].sort_unstable_by_key(|&(_, gain)| -gain);
 
     for &(mv, _) in captures.iter().take(num_captures) {
+        // SEE Pruning in Quiescence Search:
+        // Skip losing captures unless it's a promotion or tactical check evasion
+        if mv.promotion.is_none() && crate::see::see(board, mv) < 0 {
+            continue;
+        }
+
         let mut next = board.clone();
         next.play(mv);
         ctx.nodes += 1;
