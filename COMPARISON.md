@@ -41,6 +41,7 @@
 1. **SEE (Static Exchange Evaluation) for Captures & Move Ordering** (Expected Gain: +50-80 Elo, Risk: Low)
    - **Result: ACCEPTED.** Match vs previous accepted build: 42W / 36L / 22D (53.0%), **+20.9 Elo**. Promoted to accepted baseline.
 2. **Capture-Only Move Generation in Quiescence** (Expected Gain: +40% QS speedup, Risk: Low)
+   - **Result: REVERTED.** Tested 100 games vs accepted SEE: 20W / 24L / 56D (48.0%), **-13.9 Elo**. Pre-filtering `piece_moves.to &= capture_targets` introduced movegen overhead per callback that slightly slowed down nodes compared to direct cozy-chess iteration. Reverted per Rule 4 ("If SPRT fails, revert").
 3. **Logarithmic / Smooth Late Move Reductions (LMR)** (Expected Gain: +30-40 Elo, Risk: Low-Medium)
 4. **Incremental PSQT & Phase Updates in make/unmake** (Expected Gain: +30-40% NPS, Risk: Low)
 5. **Configurable UCI `Hash` Option & TT Bucketing** (Expected Gain: +20-30 Elo, Risk: Low)

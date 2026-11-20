@@ -49,8 +49,8 @@
   - [x] Aspiration Windows
   - [x] Futility & Reverse Futility Pruning
   - [x] Static Exchange Evaluation (SEE) - Implemented & Accepted (+20.9 Elo)
-  - [ ] Capture-only move generation in quiescence (Top Idea #2)
-  - [ ] Logarithmic Late Move Reductions (Top Idea #3)
+  - [x] Capture-only move generation in quiescence - Tested & Reverted (-13.9 Elo, perft/QS overhead)
+  - [ ] Logarithmic Late Move Reductions (Top Idea #3) - Next
   - [ ] Incremental PSQT & Phase updates (Top Idea #4)
   - [ ] Configurable UCI Hash option (Top Idea #5)
   - [ ] Continuation History - pending
