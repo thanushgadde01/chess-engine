@@ -355,9 +355,18 @@ fn negamax(
         return 0;
     }
 
-    // Check extension: extend depth by 1 if in check to avoid tactical horizon effects
+    // Mate Distance Pruning:
+    // If a mate score is closer than our current alpha/beta bounds, prune impossible branches
+    let mate_score = MATE - (ply as i32);
+    alpha = alpha.max(-mate_score);
+    beta = beta.min(mate_score - 1);
+    if alpha >= beta {
+        return alpha;
+    }
+
+    // Check extension: extend depth by 1 if in check (capped to prevent tactical explosion)
     let in_check = !board.checkers().is_empty();
-    let depth = if in_check {
+    let depth = if in_check && ply < 32 {
         depth.saturating_add(1)
     } else {
         depth
@@ -387,9 +396,22 @@ fn negamax(
     // Static evaluation for pruning heuristics
     let static_eval = evaluate(board);
 
+    // Razoring (Depth 1-3):
+    // If static evaluation is far below beta and this is a non-PV node, verify via quiescence search
+    let is_pv_node = beta - alpha > 1;
+    if !is_pv_node && !in_check && depth <= 3 && static_eval.abs() < MATE_BOUND {
+        let razor_margin = 150 + 100 * (depth as i32);
+        if static_eval + razor_margin < beta {
+            let q_score = quiescence(board, alpha, beta, ctx, 0);
+            if q_score < beta {
+                return q_score.max(alpha);
+            }
+        }
+    }
+
     // Reverse Futility Pruning (RFP / Static Null Move Pruning)
     // If static evaluation is well above beta in shallow non-check nodes, prune immediately
-    if !in_check && depth <= 3 && static_eval.abs() < MATE_BOUND {
+    if !is_pv_node && !in_check && depth <= 3 && static_eval.abs() < MATE_BOUND {
         let rfp_margin = 120 * depth as i32;
         if static_eval - rfp_margin >= beta {
             return static_eval - rfp_margin;
@@ -471,15 +493,20 @@ fn negamax(
         let is_killer = ordering.killers[ply.min(crate::ordering::MAX_PLY - 1)].contains(&Some(mv));
 
         // Futility Pruning: skip quiet moves that have no chance of raising alpha at shallow depths
+        // Margins calibrated with piece values: d=1: pawn(100), d=2: knight(320), d=3: rook(500)
         if !in_check
-            && depth <= 2
+            && depth <= 3
             && moves_searched > 0
             && !is_capture
             && !is_promotion
             && !gives_check
             && !is_killer
         {
-            let futility_margin = 150 * depth as i32;
+            let futility_margin = match depth {
+                1 => 120,
+                2 => 320,
+                _ => 500,
+            };
             if static_eval + futility_margin <= alpha {
                 moves_searched += 1;
                 continue;

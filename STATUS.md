@@ -1,6 +1,17 @@
 # Engine Status
 
-- Current phase: Phase 5 Upgrades (SEE Implemented & Accepted)
+- Current phase: Reference-Inspired Search Upgrades (Accepted +38.4 Elo)
+- Step 5.10: Mate Distance Pruning, Razoring & Calibrated Futility:
+  - Mate Distance Pruning: Prunes search branches if the closest possible checkmate cannot improve alpha or exceeds beta.
+  - Razoring (depths 1-3): Verifies hopeless positions with shallow static eval deficits via quiescence search before recursing full negamax.
+  - Calibrated Futility Margins: Dynamic margins scaled to piece values (120 for pawn at d=1, 320 for knight at d=2, 500 for rook at d=3).
+  - Check Extension Capping: Guards check extensions to avoid infinite branch explosions in endgames.
+  - Match Result vs previous accepted build (`engine-optimized.exe`):
+    - 100 games at 100ms/move, balanced openings.
+    - Score: 41 Wins / 30 Losses / 29 Draws (55.5% win rate).
+    - Elo difference: **+38.4 ± 89.7 Elo**.
+    - Illegal moves: 0.
+    - Result: **ACCEPTED** and promoted to `tools/bin/engine-optimized.exe` and `tools/bin/engine-play.exe`.
 - Step 5.9: Static Exchange Evaluation (SEE):
   - Implementation: `src/see.rs` with minimax back-propagation over least valuable attackers.
   - Quiescence Search: Pruning losing captures (`see < 0`).
@@ -52,6 +63,7 @@
   - [x] Capture-only move generation in quiescence - Tested & Reverted (-13.9 Elo, perft/QS overhead)
   - [x] Logarithmic Late Move Reductions - Tested & Reverted (-103.7 Elo, over-reduction on quiet lines)
   - [x] Configurable UCI Hash & Clear Hash Option - Implemented & Accepted (Verified standard compliance)
+  - [x] Mate Distance Pruning, Razoring & Calibrated Futility - Implemented & Accepted (+38.4 Elo)
   - [ ] Incremental PSQT & Phase updates (Top Idea #4) - Next
   - [ ] Configurable UCI Hash option (Top Idea #5)
   - [ ] Continuation History - pending
