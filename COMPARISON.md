@@ -43,5 +43,6 @@
 2. **Capture-Only Move Generation in Quiescence** (Expected Gain: +40% QS speedup, Risk: Low)
    - **Result: REVERTED.** Tested 100 games vs accepted SEE: 20W / 24L / 56D (48.0%), **-13.9 Elo**. Pre-filtering `piece_moves.to &= capture_targets` introduced movegen overhead per callback that slightly slowed down nodes compared to direct cozy-chess iteration. Reverted per Rule 4 ("If SPRT fails, revert").
 3. **Logarithmic / Smooth Late Move Reductions (LMR)** (Expected Gain: +30-40 Elo, Risk: Low-Medium)
+   - **Result: REVERTED.** Tested 100 games vs accepted baseline: 11W / 40L / 49D (35.5%), **-103.7 Elo**. The deeper reductions caused tactical blunders on quiet moves without history-based reduction adjustments. Reverted per Rule 4 to preserve engine strength.
 4. **Incremental PSQT & Phase Updates in make/unmake** (Expected Gain: +30-40% NPS, Risk: Low)
 5. **Configurable UCI `Hash` Option & TT Bucketing** (Expected Gain: +20-30 Elo, Risk: Low)

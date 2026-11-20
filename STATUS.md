@@ -50,7 +50,8 @@
   - [x] Futility & Reverse Futility Pruning
   - [x] Static Exchange Evaluation (SEE) - Implemented & Accepted (+20.9 Elo)
   - [x] Capture-only move generation in quiescence - Tested & Reverted (-13.9 Elo, perft/QS overhead)
-  - [ ] Logarithmic Late Move Reductions (Top Idea #3) - Next
+  - [x] Logarithmic Late Move Reductions - Tested & Reverted (-103.7 Elo, over-reduction on quiet lines)
+  - [ ] Configurable UCI Hash Option (Top Idea #5) - Next
   - [ ] Incremental PSQT & Phase updates (Top Idea #4)
   - [ ] Configurable UCI Hash option (Top Idea #5)
   - [ ] Continuation History - pending
