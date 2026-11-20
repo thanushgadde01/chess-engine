@@ -51,8 +51,8 @@
   - [x] Static Exchange Evaluation (SEE) - Implemented & Accepted (+20.9 Elo)
   - [x] Capture-only move generation in quiescence - Tested & Reverted (-13.9 Elo, perft/QS overhead)
   - [x] Logarithmic Late Move Reductions - Tested & Reverted (-103.7 Elo, over-reduction on quiet lines)
-  - [ ] Configurable UCI Hash Option (Top Idea #5) - Next
-  - [ ] Incremental PSQT & Phase updates (Top Idea #4)
+  - [x] Configurable UCI Hash & Clear Hash Option - Implemented & Accepted (Verified standard compliance)
+  - [ ] Incremental PSQT & Phase updates (Top Idea #4) - Next
   - [ ] Configurable UCI Hash option (Top Idea #5)
   - [ ] Continuation History - pending
 - Step 5 Verification Results:

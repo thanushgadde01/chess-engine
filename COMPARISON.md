@@ -46,3 +46,4 @@
    - **Result: REVERTED.** Tested 100 games vs accepted baseline: 11W / 40L / 49D (35.5%), **-103.7 Elo**. The deeper reductions caused tactical blunders on quiet moves without history-based reduction adjustments. Reverted per Rule 4 to preserve engine strength.
 4. **Incremental PSQT & Phase Updates in make/unmake** (Expected Gain: +30-40% NPS, Risk: Low)
 5. **Configurable UCI `Hash` Option & TT Bucketing** (Expected Gain: +20-30 Elo, Risk: Low)
+   - **Result: ACCEPTED.** Added standard UCI `option name Hash type spin default 16 min 1 max 1024` and `option name Clear Hash type button`. Verified dynamic resizing, table clearing, and UCI protocol compatibility across test harness.

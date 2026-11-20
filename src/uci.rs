@@ -77,6 +77,7 @@ pub fn run() {
                 println!("id name RustChess 0.1 ({profile})");
                 println!("id author thanushgadde01");
                 println!("option name Hash type spin default 16 min 1 max 1024");
+                println!("option name Clear Hash type button");
                 println!("uciok");
             }
             "isready" => {
@@ -118,6 +119,13 @@ pub fn run() {
                         let mut table = tt.lock().unwrap();
                         table.resize(size_mb.clamp(1, 1024));
                     }
+                } else if rest.len() >= 2
+                    && rest[0].eq_ignore_ascii_case("name")
+                    && rest[1].eq_ignore_ascii_case("clear")
+                    && rest.get(2).is_some_and(|s| s.eq_ignore_ascii_case("hash"))
+                {
+                    let mut table = tt.lock().unwrap();
+                    table.clear();
                 }
             }
             "quit" => {
