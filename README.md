@@ -7,7 +7,6 @@
 [![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?logo=windows&logoColor=white)](https://www.microsoft.com/windows)
 [![Protocol](https://img.shields.io/badge/Protocol-UCI-2ea44f)](https://www.wbec-ridderkerk.nl/html/UCIProtocol.html)
-[![License](https://img.shields.io/github/license/thanushgadde01/chess-engine?color=blue)](https://github.com/thanushgadde01/chess-engine/blob/master/LICENSE)
 [![Stars](https://img.shields.io/github/stars/thanushgadde01/chess-engine?style=flat&logo=github)](https://github.com/thanushgadde01/chess-engine/stargazers)
 [![Last Commit](https://img.shields.io/github/last-commit/thanushgadde01/chess-engine?logo=git)](https://github.com/thanushgadde01/chess-engine/commits/master)
 
@@ -186,10 +185,10 @@ Issues, benchmarks, bug reports, and pull requests are welcome. When reporting a
 
 ## 📄 License
 
-See the repository [license file](LICENSE) for licensing information.
+A license has not yet been published for this repository. Add a `LICENSE` file before distributing the engine as open-source software.
 
 <div align="center">
 
-[⬆️ Back to top](#️-rust-chess-engine)
+[⬆️ Back to top](#rust-chess-engine)
 
 </div>
